@@ -1,0 +1,10 @@
+[Unit]
+Description=Install prebuilt store if trust management is not installed.
+ConditionFileIsExecutable=!/usr/bin/clrtrust
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/cp -r --preserve=mode,links /usr/share/ca-certs/.prebuilt-store /var/cache/ca-certs
+
+[Install]
+WantedBy=multi-user.target

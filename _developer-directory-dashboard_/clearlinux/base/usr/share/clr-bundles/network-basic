@@ -1,0 +1,61 @@
+# [TITLE]: network-basic
+# [DESCRIPTION]: Run network utilities and modify network settings.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Networking
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+# perl-basic and python3-basic included to avoid duplication
+include(os-core-webproxy)
+include(perl-basic)
+include(xz)
+
+also-add(clr-network-troubleshooter)
+also-add(curl)
+also-add(dpdk)
+also-add(ethtool)
+also-add(iproute2)
+also-add(iptables)
+also-add(net-tools)
+also-add(openssh-client)
+also-add(openssl)
+also-add(openvswitch)
+also-add(rsync)
+also-add(wget)
+also-add(wpa_supplicant)
+also-add(znc)
+
+WireGuard
+bind-utils-bin
+bind-utils-man
+bmon
+bridge-utils
+connect-proxy
+conntrack-tools
+ebtables
+ipset
+iptraf-ng
+iputils
+iw
+links
+nftables-bin
+nftables-doc
+nftables-man
+nmap-extras
+openconnect
+opensm
+openvpn
+rdma-core-bin
+rdma-core-doc
+rdma-core-man
+redsocks
+tcpdump
+traceroute
+whois
+include(curl)
+include(libevent-lib)
+include(openldap)
+include(ncurses-lib)
+include(lz4)
+include(libnl)
+include(libpcap-lib)
+include(libxml2)

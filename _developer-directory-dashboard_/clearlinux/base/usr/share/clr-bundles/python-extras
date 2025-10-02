@@ -1,0 +1,84 @@
+# [TITLE]: python-extras
+# [DESCRIPTION]: Improve user experience with a common set of prebuilt Python libraries.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Programming Languages, Developer Tools, Python
+# [MAINTAINER]: Athenas Jimenez <athenas.jimenez.gonzalez@intel.com>
+
+include(python3-basic)
+include(python3-tcl)
+include(openblas)
+include(cloud-api)
+include(Sphinx)
+include(graphviz)
+
+#
+# For the test suite
+#
+glibc-bin
+
+#
+PyYAML
+pypi-black
+pypi-build
+pypi-certifi
+pypi-coverage
+pypi-cxxfilt
+deap
+pypi-distro
+pypi-docopt
+pypi-flake8
+pypi-flake8_blind_except
+pypi-flake8_class_newline
+pypi-flake8_docstrings
+pypi-flake8_isort
+pypi-flit
+glibc-lib-avx2
+pypi-hatchling
+intelhex
+jdcal
+pypi-kcc
+pypi-lxml
+mypy
+pypi-numpy
+pypi-pathlib2
+pypi-pbr
+pypi-poetry
+pypi-pylint
+pypi-pytest
+pypi-pytest_cov
+pypi-pytest_repeat
+pypi-pytest_rerunfailures
+pypi-pytest_tap
+pypi-python_dateutil
+python-distutils-extra
+pypi-tabulate
+pypi-tap.py
+pypi-tox
+pypi-natsort
+include(python3-tcl)
+python-zeep
+python-zstandard
+pypi-requests
+requests-ntlm
+pypi-scikit_image
+pypi-scikit_learn
+scipy
+simplejson
+pypi-six
+pypi-sphinxcontrib_apidoc
+pypi-sphinxcontrib_blockdiag
+pypi-sphinxcontrib_httpdomain
+pypi-sphinxcontrib_newsfeed
+pypi-sphinxcontrib_programoutput
+pypi-sphinxcontrib_websupport
+pypi-sphinx_feature_classification
+pypi-sphinx_rtd_theme
+pypi-twine
+pypi-urllib3
+pypi-ldap3
+pypi-neat_python
+include(pypi-numpy)
+include(pypi-requests)
+include(pypi-cython)
+include(pandas)

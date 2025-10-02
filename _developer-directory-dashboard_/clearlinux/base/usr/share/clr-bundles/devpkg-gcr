@@ -1,0 +1,22 @@
+# [TITLE]: devpkg-gcr
+# [DESCRIPTION]: All content for pkgconfig file gcr.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+include(devpkg-glib)
+include(libglib)
+include(devpkg-p11-kit)
+
+gcr-dev
+include(libglib)
+include(gdk-pixbuf)
+include(libX11client)
+include(lib-opengl)
+include(gstreamer)
+include(harfbuzz-lib)
+include(icu4c-lib)
+include(lib-imageformat)
+include(openldap)

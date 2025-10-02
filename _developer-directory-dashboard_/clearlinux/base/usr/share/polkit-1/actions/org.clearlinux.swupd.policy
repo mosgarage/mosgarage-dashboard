@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+<policyconfig>
+  <vendor>Clear Linux OS software update</vendor>
+  <vendor_url>https://github.com/clearlinux/swupd-client</vendor_url>
+  <icon_name>system-software-update</icon_name>
+  <action id="org.clearlinux.swupd.bundle-add">
+    <description>Install OS software bundles</description>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/swupd</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">bundle-add</annotate>
+  </action>
+  <action id="org.clearlinux.swupd.bundle-remove">
+    <description>Remove OS software bundles</description>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/swupd</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">bundle-remove</annotate>
+  </action>
+  <action id="org.clearlinux.swupd.update">
+    <description>Update all OS software bundles</description>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/swupd</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">update</annotate>
+  </action>
+  <action id="org.clearlinux.swupd.search">
+    <description>Search OS software bundles</description>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/swupd</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">search</annotate>
+  </action>
+</policyconfig>

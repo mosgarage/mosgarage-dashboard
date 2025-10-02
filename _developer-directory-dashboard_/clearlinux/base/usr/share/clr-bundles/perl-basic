@@ -1,0 +1,40 @@
+# [TITLE]: perl-basic
+# [DESCRIPTION]: Run Perl language programs.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Programming Languages, Perl
+# [MAINTAINER]: Victor Rodriguez <victor.rodriguez.bahena@intel.com>
+include(lib-openssl)
+
+perl
+perl-man
+perl-Config-General
+perl-Config-Tiny
+perl-Crypt-SSLeay
+perl-DBI
+perl-DateTime-TimeZone
+perl-Encode-Locale
+perl-Error
+perl-File-Listing
+perl-HTML-Parser
+perl-HTML-Tagset
+perl-HTTP-Cookies
+perl-HTTP-Date
+perl-HTTP-Message
+perl-HTTP-Negotiate
+perl-IO-HTML
+perl-LWP-MediaTypes
+perl-LWP-Protocol-https
+perl-Params-Validate
+perl-Test-Simple
+perl-Try-Tiny
+perl-URI
+perl-XML-NamespaceSupport
+perl-XML-Parser
+perl-libwww-perl
+
+clr-check-perl-modules
+
+include(gmp-lib)
+include(nettle-lib)
+include(systemd)

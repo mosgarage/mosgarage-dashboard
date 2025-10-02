@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild hwdb database for udev, systemctl
+Documentation=man:systemd-hwdb(8)
+BindsTo=update-triggers.target
+ConditionVirtualization=false
+ConditionPathExists=/usr/bin/systemd-hwdb
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemd-hwdb update

@@ -1,0 +1,7 @@
+[Unit]
+Description=Update Software content
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/swupd update --no-progress
+ExecStartPost=/usr/bin/swupd 3rd-party update --no-progress --assume=no

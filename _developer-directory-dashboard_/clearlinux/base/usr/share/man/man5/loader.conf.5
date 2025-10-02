@@ -1,0 +1,364 @@
+'\" t
+.TH "LOADER\&.CONF" "5" "" "systemd 252" "loader.conf"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+loader.conf \- Configuration file for systemd\-boot
+.SH "SYNOPSIS"
+.PP
+\fIESP\fR/loader/loader\&.conf,
+\fIESP\fR/loader/entries/*\&.conf
+\fIXBOOTLDR\fR/loader/entries/*\&.conf
+.SH "DESCRIPTION"
+.PP
+\fBsystemd-boot\fR(7)
+will read
+\fIESP\fR/loader/loader\&.conf, and any files with the
+"\&.conf"
+extension under
+\fIESP\fR/loader/entries/
+on the EFI system partition (ESP), and
+\fIXBOOTLDR\fR/loader/entries/
+on the extended boot loader partition (XBOOTLDR) as defined by
+\m[blue]\fBBoot Loader Specification\fR\m[]\&\s-2\u[1]\d\s+2\&.
+.PP
+Each of these configuration files must consist of series of newline (i\&.e\&. ASCII code 10) separated lines, each consisting of an option name, followed by whitespace, and the option value\&.
+"#"
+may be used to start a comment line\&. Empty and comment lines are ignored\&. The files use UTF\-8 encoding\&.
+.PP
+Boolean arguments may be written as
+"yes"/"y"/"true"/"t"/"on"/"1"
+or
+"no"/"n"/"false"/"f"/"off"/"0"\&.
+.SH "OPTIONS"
+.PP
+The configuration options supported by
+\fIESP\fR/loader/entries/*\&.conf
+and
+\fIXBOOTLDR\fR/loader/entries/*\&.conf
+files are defined as part of the
+\m[blue]\fBBoot Loader Specification\fR\m[]\&\s-2\u[1]\d\s+2\&.
+.PP
+The following configuration are supported by the
+loader\&.conf
+configuration file:
+.PP
+default
+.RS 4
+A glob pattern to select the default entry\&. The default entry may be changed in the boot menu itself, in which case the name of the selected entry will be stored as an EFI variable, overriding this option\&.
+.sp
+If set to
+"@saved"
+the chosen entry will be saved as an EFI variable on every boot and automatically selected the next time the boot loader starts\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table\ \&1.\ \&Automatically detected entries will use the following names:
+.TS
+allbox tab(:);
+lB lB.
+T{
+Name
+T}:T{
+Description
+T}
+.T&
+l l
+l l
+l l
+l l
+l l.
+T{
+auto\-efi\-default
+T}:T{
+EFI Default Loader
+T}
+T{
+auto\-efi\-shell
+T}:T{
+EFI Shell
+T}
+T{
+auto\-osx
+T}:T{
+macOS
+T}
+T{
+auto\-reboot\-to\-firmware\-setup
+T}:T{
+Reboot Into Firmware Interface
+T}
+T{
+auto\-windows
+T}:T{
+Windows Boot Manager
+T}
+.TE
+.sp 1
+Supported glob wildcard patterns are
+"?",
+"*", and
+"[\&...]"
+(including ranges)\&. Note that these patterns use the same syntax as
+\fBglob\fR(7), but do not support all features\&. In particular, set negation and named character classes are not supported\&. The matching is done case\-insensitively on the entry ID (as shown by
+\fBbootctl list\fR)\&.
+.RE
+.PP
+timeout
+.RS 4
+How long the boot menu should be shown before the default entry is booted, in seconds\&. This may be changed in the boot menu itself and will be stored as an EFI variable in that case, overriding this option\&.
+.sp
+If set to
+"menu\-hidden"
+or
+"0"
+(the default) no menu is shown and the default entry will be booted immediately\&. The menu can be shown by pressing and holding a key before systemd\-boot is launched\&. Setting this to
+"menu\-force"
+disables the timeout while always showing the menu\&.
+.RE
+.PP
+console\-mode
+.RS 4
+This option configures the resolution of the console\&. Takes a number or one of the special values listed below\&. The following values may be used:
+.PP
+0
+.RS 4
+Standard UEFI 80x25 mode
+.RE
+.PP
+1
+.RS 4
+80x50 mode, not supported by all devices
+.RE
+.PP
+2
+.RS 4
+the first non\-standard mode provided by the device firmware, if any
+.RE
+.PP
+auto
+.RS 4
+Pick a suitable mode automatically using heuristics
+.RE
+.PP
+max
+.RS 4
+Pick the highest\-numbered available mode
+.RE
+.PP
+keep
+.RS 4
+Keep the mode selected by firmware (the default)
+.RE
+.RE
+.PP
+editor
+.RS 4
+Takes a boolean argument\&. Enable (the default) or disable the editor\&. The editor should be disabled if the machine can be accessed by unauthorized persons\&.
+.RE
+.PP
+auto\-entries
+.RS 4
+Takes a boolean argument\&. Enable (the default) or disable entries for other boot entries found on the boot partition\&. In particular, this may be useful when loader entries are created to show replacement descriptions for those entries\&.
+.RE
+.PP
+auto\-firmware
+.RS 4
+A boolean controlling the presence of the "Reboot into firmware" entry (enabled by default)\&. If this is disabled, the firmware interface may still be reached by using the
+f
+key\&.
+.RE
+.PP
+beep
+.RS 4
+Takes a boolean argument\&. If timeout enabled beep every second, otherwise beep n times when n\-th entry in boot menu is selected (default disabled)\&. Currently, only x86 is supported, where it uses the PC speaker\&.
+.RE
+.PP
+secure\-boot\-enroll
+.RS 4
+Danger: this feature might soft\-brick your device if used improperly\&.
+.sp
+Takes one of
+"off",
+"manual"
+or
+"force"\&. Controls the enrollment of secure boot keys\&. If set to
+"off", no action whatsoever is taken\&. If set to
+"manual"
+(the default) and the UEFI firmware is in setup\-mode then entries to manually enroll Secure Boot variables are created in the boot menu\&. If set to
+"force", in addition, if a directory named
+/loader/keys/auto/
+exists on the ESP then the keys in that directory are enrolled automatically\&.
+.sp
+The different sets of variables can be set up under
+/loader/keys/\fINAME\fR
+where
+\fINAME\fR
+is the name that is going to be used as the name of the entry\&. This allows one to ship multiple sets of Secure Boot variables and choose which one to enroll at runtime\&.
+.sp
+Supported secure boot variables are one database for authorized images, one key exchange key (KEK) and one platform key (PK)\&. For more information, refer to the
+\m[blue]\fBUEFI specification\fR\m[]\&\s-2\u[2]\d\s+2, under Secure Boot and Driver Signing\&. Another resource that describe the interplay of the different variables is the
+\m[blue]\fBEDK2 documentation\fR\m[]\&\s-2\u[3]\d\s+2\&.
+.sp
+A complete set of UEFI variable includes
+db\&.auth,
+KEK\&.auth
+and
+PK\&.auth\&. Note that these files need to be authenticated UEFI variables\&. See below for an example of how to generate them from regular X\&.509 keys\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+uuid=$(systemd\-id128 new \-\-uuid)
+for key in PK KEK db; do
+  openssl req \-new \-x509 \-subj "/CN=${key}/" \-keyout "${key}\&.key" \-out "${key}\&.crt"
+  openssl x509 \-outform DER \-in "${key}\&.crt" \-out "${key}\&.cer"
+  cert\-to\-efi\-sig\-list \-g "${uuid}" "${key}\&.crt" "${key}\&.esl"
+done
+
+for key in MicWinProPCA2011_2011\-10\-19\&.crt MicCorUEFCA2011_2011\-06\-27\&.crt MicCorKEKCA2011_2011\-06\-24\&.crt; do
+  curl "https://www\&.microsoft\&.com/pkiops/certs/${key}" \-\-output "${key}"
+  sbsiglist \-\-owner 77fa9abd\-0359\-4d32\-bd60\-28f4e78f784b \-\-type x509 \-\-output "${key%crt}esl" "${key}"
+done
+
+# Optionally add Microsoft Windows Production CA 2011 (needed to boot into Windows)\&.
+cat MicWinProPCA2011_2011\-10\-19\&.esl >> db\&.esl
+
+# Optionally add Microsoft Corporation UEFI CA 2011 (for firmware drivers / option ROMs
+# and third\-party boot loaders (including shim)\&. This is highly recommended on real
+# hardware as not including this may soft\-brick your device (see next paragraph)\&.
+cat MicCorUEFCA2011_2011\-06\-27\&.esl >> db\&.esl
+
+# Optionally add Microsoft Corporation KEK CA 2011\&. Recommended if either of the
+# Microsoft keys is used as the official UEFI revocation database is signed with this
+# key\&. The revocation database can be updated with \fBfwupdmgr\fR(1)\&.
+cat MicCorKEKCA2011_2011\-06\-24\&.esl >> KEK\&.esl
+
+sign\-efi\-sig\-list \-c PK\&.crt \-k PK\&.key PK PK\&.esl PK\&.auth
+sign\-efi\-sig\-list \-c PK\&.crt \-k PK\&.key KEK KEK\&.esl KEK\&.auth
+sign\-efi\-sig\-list \-c KEK\&.crt \-k KEK\&.key db db\&.esl db\&.auth
+        
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This feature is considered dangerous because even if all the required files are signed with the keys being loaded, some files necessary for the system to function properly still won\*(Aqt be\&. This is especially the case with Option ROMs (e\&.g\&. for storage controllers or graphics cards)\&. See
+\m[blue]\fBSecure Boot and Option ROMs\fR\m[]\&\s-2\u[4]\d\s+2
+for more details\&.
+.RE
+.PP
+reboot\-for\-bitlocker
+.RS 4
+Caveat: This feature is experimental, and is likely to be changed (or removed in its current form) in a future version of systemd\&.
+.sp
+Work around BitLocker requiring a recovery key when the boot loader was updated (disabled by default)\&.
+.sp
+Try to detect BitLocker encrypted drives along with an active TPM\&. If both are found and Windows Boot Manager is selected in the boot menu, set the
+"BootNext"
+EFI variable and restart the system\&. The firmware will then start Windows Boot Manager directly, leaving the TPM PCRs in expected states so that Windows can unseal the encryption key\&. This allows systemd\-boot to be updated without having to provide the recovery key for BitLocker drive unlocking\&.
+.sp
+Note that the PCRs that Windows uses can be configured with the
+"Configure TPM platform validation profile for native UEFI firmware configurations"
+group policy under
+"Computer Configuration\eAdministrative Templates\eWindows Components\eBitLocker Drive Encryption"\&. When secure boot is enabled, changing this to PCRs
+"0,2,7,11"
+should be safe\&. The TPM key protector needs to be removed and then added back for the PCRs on an already encrypted drive to change\&. If PCR 4 is not measured, this setting can be disabled to speed up booting into Windows\&.
+.RE
+.PP
+random\-seed\-mode
+.RS 4
+Takes one of
+"off",
+"with\-system\-token"
+and
+"always"\&. If
+"off"
+no random seed data is read off the ESP, nor passed to the OS\&. If
+"with\-system\-token"
+(the default)
+\fBsystemd\-boot\fR
+will read a random seed from the ESP (from the file
+/loader/random\-seed) only if the
+\fILoaderSystemToken\fR
+EFI variable is set, and then derive the random seed to pass to the OS from the combination\&. If
+"always"
+the boot loader will do so even if
+\fILoaderSystemToken\fR
+is not set\&. This mode is useful in environments where protection against OS image reuse is not a concern, and the random seed shall be used even with no further setup in place\&. Use
+\fBbootctl random\-seed\fR
+to initialize both the random seed file in the ESP and the system token EFI variable\&.
+.sp
+See
+\m[blue]\fBRandom Seeds\fR\m[]\&\s-2\u[5]\d\s+2
+for further information\&.
+.RE
+.SH "EXAMPLE"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# /boot/efi/loader/loader\&.conf
+timeout 0
+default 01234567890abcdef1234567890abdf0\-*
+editor no
+    
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+The menu will not be shown by default (the menu can still be shown by pressing and holding a key during boot)\&. One of the entries with files with a name starting with
+"01234567890abcdef1234567890abdf0\-"
+will be selected by default\&. If more than one entry matches, the one with the highest priority will be selected (generally the one with the highest version number)\&. The editor will be disabled, so it is not possible to alter the kernel command line\&.
+.SH "SEE ALSO"
+.PP
+\fBsystemd-boot\fR(7),
+\fBbootctl\fR(1)
+.SH "NOTES"
+.IP " 1." 4
+Boot Loader Specification
+.RS 4
+\%https://systemd.io/BOOT_LOADER_SPECIFICATION
+.RE
+.IP " 2." 4
+UEFI specification
+.RS 4
+\%https://uefi.org/specifications
+.RE
+.IP " 3." 4
+EDK2 documentation
+.RS 4
+\%https://edk2-docs.gitbook.io/understanding-the-uefi-secure-boot-chain/secure_boot_chain_in_uefi/uefi_secure_boot
+.RE
+.IP " 4." 4
+Secure Boot and Option ROMs
+.RS 4
+\%https://github.com/Foxboron/sbctl/wiki/FAQ#option-rom
+.RE
+.IP " 5." 4
+Random Seeds
+.RS 4
+\%https://systemd.io/RANDOM_SEEDS
+.RE

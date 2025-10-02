@@ -1,0 +1,16 @@
+# [TITLE]: devpkg-cups-filters
+# [DESCRIPTION]: All content for pkgconfig file cups-filters.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+
+cups-filters-dev
+include(lib-imageformat)
+include(libglib)
+include(lib-opengl)
+include(qt-core)
+include(qt-basic)
+include(libX11client)

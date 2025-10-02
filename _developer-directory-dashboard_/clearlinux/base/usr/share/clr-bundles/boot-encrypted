@@ -1,0 +1,16 @@
+# [TITLE]: boot-encrypted
+# [DESCRIPTION]: Enable booting with encrypted root, swap, or other partitions.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Security
+# [MAINTAINER]: Mark Horn <mark.d.horn@intel.com>
+include(bootloader-extras)
+include(python3-basic)
+LVM2
+LVM2-extras
+cryptsetup-bin
+cryptsetup-config
+cryptsetup-lib
+include(libglib)
+include(popt-lib)
+include(gobject-introspection)

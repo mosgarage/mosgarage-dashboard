@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# this attempts to start systemd-networkd if nmcli does not manage the ethernet
+# interfaces. it is a fallback to prevent no network manager at all.
+
+systemctl is-active systemd-networkd &>/dev/null \
+    && { echo "systemd-networkd is already active."; exit 0; }
+
+if ! systemctl is-active NetworkManager &>/dev/null; then
+    2>&1 echo "Both systemd-networkd and NetworkManager are inactive. Starting systemd-networkd."
+    systemctl start systemd-networkd
+fi
+
+# NetworkManager is active. see if it has unmanaged interfaces and no other
+# ethernet is connected.
+
+# need functional nmcli for that
+if ! command -v nmcli &>/dev/null; then
+    # bruteforce start systemd-networkd: not enough tools to do the right thing
+    2>&1 echo "Cannot find nmcli. Assuming NetworkManager's broken. Starting systemd-networkd."
+    systemctl start systemd-networkd
+fi
+
+msg=""
+
+while read if_name if_type if_state; do
+    [ "${if_type}" != "ethernet" ] && continue
+    [ "${if_state}" = "connected" ] && { msg=""; break; }
+    if [ "${if_state}" = "unmanaged" ]; then
+        msg="${msg}
+Ethernet interface ${if_name} (${if_type}) is ${if_state}"
+    fi
+done < <(nmcli -c no -m tabular -f DEVICE,TYPE,STATE d | sed -e '1d')
+
+if [ -n "${msg}" ]; then
+    msg=$(echo "${msg}" | sed -e '1d')
+    2>&1 echo "systemd-networkd needs to be started. No active ethernet found:"
+    2>&1 echo "${msg}"
+    systemctl start systemd-networkd
+fi

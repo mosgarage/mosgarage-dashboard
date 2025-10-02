@@ -1,0 +1,12 @@
+# [TITLE]: nodejs-basic
+# [DESCRIPTION]: Run JavaScript server side for fast, scalable network applications.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+include(libstdcpp)
+include(lib-openssl)
+include(python3-basic)
+nodejs
+nodejs-doc
+include(icu4c-lib)

@@ -1,0 +1,8 @@
+[Unit]
+Description=Clear Linux Project for Intel Architecture power tweaks
+After=sysinit.target
+ConditionVirtualization=!container
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/clr_power

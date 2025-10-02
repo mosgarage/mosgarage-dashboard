@@ -1,0 +1,18 @@
+# [TITLE]: os-testsuite
+# [DESCRIPTION]: Provides minimal functionality for core testing functions.
+# [STATUS]: Active
+# [CAPABILITIES]: TAP testing, HTTP requests, PTY automation, and various file utilities
+# [TAGS]: Developer Tools
+# [MAINTAINER]: George T Kramer <george.t.kramer@intel.com>
+include(binutils)
+include(curl)
+include(diffutils)
+include(file)
+include(git)
+include(openssh-server)
+include(parallel)
+include(sudo)
+
+bats
+expect
+glibc-bin

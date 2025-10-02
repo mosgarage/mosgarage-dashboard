@@ -1,0 +1,17 @@
+# [TITLE]: gnupg
+# [DESCRIPTION]: The GNU Privacy Guard suite of programs
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]:
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+
+# start of custom additions (edits outside this area will be removed automatically)
+include(sqlite)
+include(nettle-lib)
+include(gmp-lib)
+include(libglib)
+# end of custom additions
+
+# main package
+gnupg

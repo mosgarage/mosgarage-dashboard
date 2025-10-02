@@ -1,0 +1,43 @@
+# [TITLE]: desktop-kde-libs
+# [DESCRIPTION]: Helper libraries from the KDE ecosystem.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Other
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(qt-basic)
+include(kde-frameworks5)
+include(lib-imageformat)
+
+attica-lib
+baloo-lib
+baloo-widgets-lib
+exiv2-lib
+gpgme-lib
+kauth-lib
+kcalendarcore-lib
+kglobalaccel-lib
+kcmutils-lib
+kdbusaddons-lib
+kdeclarative-lib
+kdoctools-lib
+kglobalaccel-lib
+kguiaddons-lib
+kirigami2-lib
+kpackage-lib
+kquickcharts-lib
+libassuan-lib
+libxslt-lib
+phonon-lib
+qtwebengine
+tdb-lib
+kpeople-lib
+purpose-lib
+kxmlrpcclient-lib
+kidletime-lib
+prison-lib
+kdoctools-lib
+kwallet-lib
+kservice-lib
+syntax-highlighting-lib
+krunner-lib

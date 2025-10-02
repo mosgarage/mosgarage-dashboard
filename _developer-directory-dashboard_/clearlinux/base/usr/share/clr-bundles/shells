@@ -1,0 +1,20 @@
+# [TITLE]: shells
+# [DESCRIPTION]: Run various shells.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+include(libstdcpp)
+bash
+bash-bin
+bash-completion
+bash-completion-data
+include(devpkg-bash-completion)
+bash-doc
+bash-extras
+bash-locales
+fish
+pcre-extras
+include(zsh)
+include(ncurses-lib)
+include(pcre-lib)

@@ -1,0 +1,12 @@
+[Unit]
+Description=Create glib schemas compiled cache file on first boot
+BindsTo=graphical.target
+ConditionPathExists=/usr/libexec/glib-compile-schemas
+ConditionPathExists=!/var/cache/glib-2.0/schemas/gschemas.compiled
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/glib-compile-schemas --targetdir=/var/cache/glib-2.0/schemas /usr/share/glib-2.0/schemas
+
+[Install]
+WantedBy=graphical.target

@@ -1,0 +1,32 @@
+# [TITLE]: software-testing
+# [DESCRIPTION]: Software to run or create test suites.
+# [STATUS]: Active
+# [CAPABILITIES]: Test runners
+# [TAGS]: Developer Tools, Tools and Utilities
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+include(perl-basic)
+include(python3-basic)
+include(Sphinx)
+include(python-testing)
+
+bats
+check
+cmocka
+include(devpkg-cmocka)
+glog
+googletest
+perl-TAP-Harness-Archive
+pypi-pytest_cov
+pypi-pytest_forked
+pypi-pytest_randomly
+pypi-pytest_repeat
+pypi-pytest_rerunfailures
+pypi-pytest_runner
+pypi-pytest_sugar
+pypi-pytest_timeout
+pypi-pytest_xdist
+pypi-mock
+pypi-tap.py
+pypi-testpath
+include(ncurses-lib)

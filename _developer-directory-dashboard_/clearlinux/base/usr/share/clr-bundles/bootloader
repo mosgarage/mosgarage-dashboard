@@ -1,0 +1,12 @@
+# [TITLE]: bootloader
+# [DESCRIPTION]: Loads kernel from disk and boots the system.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Kernel
+# [MAINTAINER]: Bernal Marin, Miguel <miguel.bernal.marin@linux.intel.com>
+clr-boot-manager
+gptfdisk-bin
+shim
+include(syslinux)
+include(libstdcpp)
+include(popt-lib)

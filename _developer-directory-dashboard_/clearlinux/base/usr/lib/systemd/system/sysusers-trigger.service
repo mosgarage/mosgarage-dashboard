@@ -1,0 +1,8 @@
+[Unit]
+Description=Create sysusers
+Documentation=man:systemd-sysusers(8)
+BindsTo=update-triggers.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemd-sysusers

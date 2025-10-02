@@ -1,0 +1,12 @@
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.clearlinux.swupd.bundle-add" ||
+        action.id == "org.clearlinux.swupd.bundle-remove" ||
+        action.id == "org.clearlinux.swupd.update" ||
+        action.id == "org.clearlinux.swupd.search") {
+            if (subject.isInGroup("wheel")) {
+                return polkit.Result.YES;
+            } else {
+                return polkit.Result.AUTH_ADMIN;
+            }
+    }
+});

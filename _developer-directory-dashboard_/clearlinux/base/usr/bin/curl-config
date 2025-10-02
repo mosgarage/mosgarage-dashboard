@@ -1,0 +1,196 @@
+#! /bin/sh
+#***************************************************************************
+#                                  _   _ ____  _
+#  Project                     ___| | | |  _ \| |
+#                             / __| | | | |_) | |
+#                            | (__| |_| |  _ <| |___
+#                             \___|\___/|_| \_\_____|
+#
+# Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
+#
+# This software is licensed as described in the file COPYING, which
+# you should have received as part of this distribution. The terms
+# are also available at https://curl.se/docs/copyright.html.
+#
+# You may opt to use, copy, modify, merge, publish, distribute and/or sell
+# copies of the Software, and permit persons to whom the Software is
+# furnished to do so, under the terms of the COPYING file.
+#
+# This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+# KIND, either express or implied.
+#
+# SPDX-License-Identifier: curl
+#
+###########################################################################
+
+prefix="/usr"
+exec_prefix=/usr
+includedir=/usr/include
+cppflag_curl_staticlib=
+
+usage()
+{
+    cat <<EOF
+Usage: curl-config [OPTION]
+
+Available values for OPTION include:
+
+  --built-shared says 'yes' if libcurl was built shared
+  --ca        ca bundle install path
+  --cc        compiler
+  --cflags    pre-processor and compiler flags
+  --checkfor [version] check for (lib)curl of the specified version
+  --configure the arguments given to configure when building curl
+  --features  newline separated list of enabled features
+  --help      display this help and exit
+  --libs      library linking information
+  --prefix    curl install prefix
+  --protocols newline separated list of enabled protocols
+  --ssl-backends output the SSL backends libcurl was built to support
+  --static-libs static libcurl library linking information
+  --version   output version information
+  --vernum    output the version information as a number (hexadecimal)
+EOF
+
+    exit $1
+}
+
+if test $# -eq 0; then
+    usage 1
+fi
+
+while test $# -gt 0; do
+    case "$1" in
+    # this deals with options in the style
+    # --option=value and extracts the value part
+    # [not currently used]
+    -*=*) value=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+    *) value= ;;
+    esac
+
+    case "$1" in
+    --built-shared)
+        echo yes
+        ;;
+
+    --ca)
+        echo 
+        ;;
+
+    --cc)
+        echo "gcc"
+        ;;
+
+    --prefix)
+        echo "$prefix"
+        ;;
+
+    --feature|--features)
+        for feature in AsynchDNS HSTS HTTP2 HTTPS-proxy IPv6 Largefile NTLM SSL TLS-SRP UnixSockets alt-svc libz threadsafe zstd ""; do
+            test -n "$feature" && echo "$feature"
+        done
+        ;;
+
+    --protocols)
+        for protocol in DICT FILE FTP FTPS HTTP HTTPS IMAP IMAPS MQTT RTSP SMTP SMTPS; do
+            echo "$protocol"
+        done
+        ;;
+
+    --version)
+        echo libcurl 8.4.0
+        exit 0
+        ;;
+
+    --checkfor)
+        checkfor=$2
+        cmajor=`echo $checkfor | cut -d. -f1`
+        cminor=`echo $checkfor | cut -d. -f2`
+        # when extracting the patch part we strip off everything after a
+        # dash as that's used for things like version 1.2.3-CVS
+        cpatch=`echo $checkfor | cut -d. -f3 | cut -d- -f1`
+
+        vmajor=`echo 8.4.0 | cut -d. -f1`
+        vminor=`echo 8.4.0 | cut -d. -f2`
+        # when extracting the patch part we strip off everything after a
+        # dash as that's used for things like version 1.2.3-CVS
+        vpatch=`echo 8.4.0 | cut -d. -f3 | cut -d- -f1`
+
+        if test "$vmajor" -gt "$cmajor"; then
+            exit 0;
+        fi
+        if test "$vmajor" -eq "$cmajor"; then
+            if test "$vminor" -gt "$cminor"; then
+                exit 0
+            fi
+            if test "$vminor" -eq "$cminor"; then
+                if test "$cpatch" -le "$vpatch"; then
+                    exit 0
+                fi
+            fi
+        fi
+
+        echo "requested version $checkfor is newer than existing 8.4.0"
+        exit 1
+        ;;
+
+    --vernum)
+        echo 080400
+        exit 0
+        ;;
+
+    --help)
+        usage 0
+        ;;
+
+    --cflags)
+        if test "X$cppflag_curl_staticlib" = "X-DCURL_STATICLIB"; then
+          CPPFLAG_CURL_STATICLIB="-DCURL_STATICLIB "
+        else
+          CPPFLAG_CURL_STATICLIB=""
+        fi
+        if test "X/usr/include" = "X/usr/include"; then
+          echo "$CPPFLAG_CURL_STATICLIB"
+        else
+          echo "${CPPFLAG_CURL_STATICLIB}-I/usr/include"
+        fi
+        ;;
+
+    --libs)
+        if test "X/usr/lib64" != "X/usr/lib" -a "X/usr/lib64" != "X/usr/lib64"; then
+           CURLLIBDIR="-L/usr/lib64 "
+        else
+           CURLLIBDIR=""
+        fi
+        if test "Xyes" = "Xno"; then
+          echo ${CURLLIBDIR}-lcurl -lnghttp3 -lnghttp2 -lssl -lcrypto -lssl -lcrypto -lzstd -lz
+        else
+          echo ${CURLLIBDIR}-lcurl
+        fi
+        ;;
+    --ssl-backends)
+        echo "OpenSSL v3+"
+        ;;
+
+    --static-libs)
+        if test "Xno" != "Xno" ; then
+          echo "/usr/lib64/libcurl.a" -Wl,--build-id=sha1 -lnghttp3 -lnghttp2 -lssl -lcrypto -lssl -lcrypto -lzstd -lz
+        else
+          echo "curl was built with static libraries disabled" >&2
+          exit 1
+        fi
+        ;;
+
+    --configure)
+        echo " '--build=x86_64-generic-linux-gnu' '--host=x86_64-generic-linux-gnu' '--target=x86_64-clr-linux-gnu' '--program-prefix=' '--prefix=/usr' '--exec-prefix=/usr' '--bindir=/usr/bin' '--sbindir=/usr/bin' '--sysconfdir=/etc' '--datadir=/usr/share' '--includedir=/usr/include' '--libdir=/usr/lib64' '--libexecdir=/usr/libexec' '--localstatedir=/var' '--sharedstatedir=/usr/com' '--mandir=/usr/share/man' '--infodir=/usr/share/info' '--disable-static' '--with-ssl=/usr' '--disable-ldap' '--without-winidn' '--with-libidn' '--enable-threaded-resolver' '--with-zlib' '--enable-symbol-hiding' '--with-ca-path=/var/cache/ca-certs/anchors' '--disable-ntlm-wb' '--disable-smb' '--enable-proxy' '--with-nghttp2' '--with-nghttp3' '--enable-ipv6' '--disable-telnet' '--disable-tftp' '--disable-pop3' '--disable-gopher' '--enable-negotiate' '--with-libproxy' '--with-gssapi=/usr' 'build_alias=x86_64-generic-linux-gnu' 'host_alias=x86_64-generic-linux-gnu' 'target_alias=x86_64-clr-linux-gnu' 'PKG_CONFIG_PATH=:/usr/lib64/pkgconfig:/usr/share/pkgconfig' 'PKG_CONFIG_LIBDIR=/usr/lib64/pkgconfig:/usr/share/pkgconfig' 'CC=gcc' 'CFLAGS=-O2 -g -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=64 -Wformat -Wformat-security -Wl,-z,now,-z,relro,-z,max-page-size=0x4000,-z,separate-code -Wno-error -ftree-vectorize -ftree-slp-vectorize -Wl,--enable-new-dtags  -Wl,--build-id=sha1  -ftrivial-auto-var-init=zero -mrelax-cmpxchg-loop -gz=zstd -ffunction-sections -m64 -march=westmere -mtune=sapphirerapids -fasynchronous-unwind-tables -Wp,-D_REENTRANT -fPIC -Os -fdata-sections -fdebug-types-section -femit-struct-debug-baseonly -ffunction-sections -fno-lto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used -g1 -gno-column-info -gno-variable-location-views -gz=zstd ' 'LDFLAGS=-Wl,--build-id=sha1'"
+        ;;
+
+    *)
+        echo "unknown option: $1"
+        usage 1
+        ;;
+    esac
+    shift
+done
+
+exit 0

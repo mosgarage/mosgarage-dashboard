@@ -1,0 +1,11 @@
+# [TITLE]: c-extras-gcc9
+# [DESCRIPTION]: Build and run C/C++ language programs using the GCC 9.x compiler
+# [STATUS]: Active
+# [CAPABILITIES]: Build and run C language programs
+# [TAGS]: Programming Languages
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+include(c-basic)
+
+gcc9
+gcc9-dev

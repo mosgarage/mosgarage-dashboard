@@ -1,0 +1,20 @@
+# [TITLE]: fluidsynth
+# [DESCRIPTION]: A real-time software synthesizer based on the SoundFont 2 specifications.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Multimedia and Graphics
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(libglib)
+include(libstdcpp)
+
+# start of custom additions (edits outside this area will be removed automatically)
+include(gnome-base-libs)
+include(pulseaudio)
+include(ncurses-lib)
+include(libX11client)
+
+# end of custom additions
+
+# main package
+fluidsynth

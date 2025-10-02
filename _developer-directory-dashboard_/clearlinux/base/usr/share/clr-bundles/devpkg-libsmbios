@@ -1,0 +1,11 @@
+# [TITLE]: devpkg-libsmbios
+# [DESCRIPTION]: All content for pkgconfig file libsmbios.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+
+libsmbios-dev
+include(python3-basic)

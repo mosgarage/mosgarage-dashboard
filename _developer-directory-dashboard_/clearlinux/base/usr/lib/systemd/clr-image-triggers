@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+while test $# -gt 0; do
+      case "$1" in
+           -r|--root)
+	      shift
+	      root=$1
+	      break
+	      ;;
+           --root=*)
+	      root=${1#--root=}
+	      break
+	      ;;
+	   *)
+	      root=$1
+	      break
+	      ;;
+      esac
+done
+if test -z "$root"
+then
+   echo '-r/--root=ROOT' argument not provided
+   exit 1
+fi
+chroot $root /usr/libexec/clr-elf-replace ||:
+chroot $root /usr/bin/systemd-tmpfiles --create ||:
+chroot $root /usr/bin/systemd-sysusers ||:
+chroot $root /usr/bin/systemd-hwdb update ||:
+chroot $root /usr/bin/mandb -q ||:
+chroot $root /usr/bin/localedef -i en_US -c -f UTF-8 en_US.UTF-8 ||:
+chroot $root /usr/bin/ldconfig -X ||:
+chroot $root /usr/bin/journalctl --update-catalog ||:
+chroot $root /usr/bin/dot -c ||:

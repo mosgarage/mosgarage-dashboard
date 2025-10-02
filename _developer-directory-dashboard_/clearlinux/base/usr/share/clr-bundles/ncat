@@ -1,0 +1,11 @@
+# [TITLE]: ncat
+# [DESCRIPTION]: Utility for reading and writing data across networks.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Security, Networking
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+include(libstdcpp)
+nmap-extras
+include(libnl)
+include(libpcap-lib)

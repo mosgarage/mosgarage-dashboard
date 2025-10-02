@@ -1,0 +1,21 @@
+# [TITLE]: devpkg-wlroots
+# [DESCRIPTION]: All content for pkgconfig file wlroots.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+include(devpkg-libX11)
+include(devpkg-libdrm)
+include(devpkg-libglvnd)
+include(devpkg-libinput)
+include(devpkg-libxkbcommon)
+include(devpkg-mesa)
+include(devpkg-pixman)
+include(devpkg-seatd)
+include(devpkg-systemd)
+include(devpkg-wayland)
+
+wlroots-dev
+include(libX11client)

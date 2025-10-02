@@ -1,0 +1,16 @@
+# [TITLE]: sysadmin-hostmgmt
+# [DESCRIPTION]: Utilities and Services for managing large-scale clusters of networked hosts.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: Salvador Teran <salvador.teran.ochoa@intel.com>
+include(ansible)
+include(git)
+include(ipmitool)
+include(pxe-server)
+include(openssh-client)
+include(python3-basic)
+clear-config-management
+freeipmi
+# for ntpdate for time management
+ntp-bin

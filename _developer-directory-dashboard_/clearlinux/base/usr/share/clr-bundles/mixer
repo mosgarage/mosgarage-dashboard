@@ -1,0 +1,32 @@
+# [TITLE]: mixer
+# [DESCRIPTION]: Tool to create custom Clear Linux OS releases.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Rodrigo Chiossi <rodrigo.chiossi@intel.com>
+
+# Repo management
+createrepo_c
+
+# Git history support
+include(git)
+
+# Builtin signature support
+include(openssl)
+
+# Fullfiles compression
+include(xz)
+include(gzip)
+include(zstd)
+bzip2
+
+# Build
+include(dnf)
+include(cpio)
+rpm
+bsdiff
+
+# Image Creation
+include(clr-installer)
+
+mixer-tools

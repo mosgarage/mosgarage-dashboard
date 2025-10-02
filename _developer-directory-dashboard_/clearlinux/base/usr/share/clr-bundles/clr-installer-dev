@@ -1,0 +1,15 @@
+# [TITLE]: clr-installer-dev
+# [DESCRIPTION]: Bundles necessary for Clear Linux OS Installer development.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Developer Tools
+# [MAINTAINER]: Mark Horn <mark.d.horn@intel.com>
+
+# Runtime dependencies
+include(clr-installer-gui)
+
+# Build-time dependencies
+include(go-basic)
+include(devpkg-glib)
+include(devpkg-cairo)
+include(devpkg-gtk3)

@@ -1,0 +1,965 @@
+#!/usr/bin/bash
+# Copyright 2017 Intel Corporation
+# See COPYING for the terms.
+
+##### HEALTH CHECKS
+
+is_root() {
+    if [ $UID -ne 0 ]; then
+        1>&2 echo "Must be root to execute the command."
+        return 1
+    fi
+    return 0
+}
+
+has_openssl() {
+    if ! command -v openssl >/dev/null 2>&1; then
+        1>&2 echo "openssl is required, but not found."
+        return 1
+    fi
+    # make sure openssl can handle a valid root CA (here-doc below)
+    cat <<EOF | openssl x509 -noout || return 1
+-----BEGIN CERTIFICATE-----
+MIIDaTCCAlGgAwIBAgIJAK0VsP61l6TgMA0GCSqGSIb3DQEBCwUAMEsxCzAJBgNV
+BAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExGTAXBgNV
+BAMMEFRlc3QgQ2VydGlmaWNhdGUwHhcNMTgxMDEwMDAwNzUwWhcNMTgxMTA5MDAw
+NzUwWjBLMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAcMC1NhbnRh
+IENsYXJhMRkwFwYDVQQDDBBUZXN0IENlcnRpZmljYXRlMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEA0wDgZS61TSfY0YU3bCunckRi0MFWsNuNJo2kmOJW
+cj81ZgD2tE7P0BhhxcDvHZqeGVmFaI+pt3++8jyMrWQ9OYZFc5SAaVjb4E/uSOPv
+6pL6qBKaJ+GYLDzC4bTq3NNxmddU2GdIVKJ6H/S8aCnHXUHx5edJh4/q2SLNighf
+mUDBCdi6IFxOR4GQTA/Q7Hvo2yaQMjkk9mNXQU7QSu9z29rZmF5y04eSoHJsfoDi
+u/svc9y2nbZbD8aGHkRN/zMTgUIZNyaYskbDzOCFMvZxABdX9o427xbdO32Ut3Q8
+kpEvhypg+UrWksau2rGMUBgOH+ikvkVSHDoRTKy5VbtGPwIDAQABo1AwTjAdBgNV
+HQ4EFgQUISRI0A9td2nZrDxecbvnQD4pZRgwHwYDVR0jBBgwFoAUISRI0A9td2nZ
+rDxecbvnQD4pZRgwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAehIj
+FTPWQDsTAdx//FxE7gKxInlHVKk/RMICeLQX9pEHCDycS9GLsgzhoM9wpaU6XTT1
+hq4A9An0RPp+tAjo/ljalwUfqKgDCe4ZauZ4SYmpJbWwcg1nb+HPRMbmL9M1WnQ6
+sxnMqXuHRXnVakgpcYO/CUT4aRO+iMjwaaaCULLfthAhdPXPzUyT/Zzd6h5vd65J
+sa75/xYFkv759QhbmCfoLUDEFH/8jM3Nzk6aN3DuxBNYxc6HqKu2qdFTa4wESflP
+iwjplcjBGnhTUJcAvlXR4JkwFSPalDhRJaXJZB1NwTBCTasvu3dQNtiZNLgFcfw8
+A5YnQ260LtWD4nmvqA==
+-----END CERTIFICATE-----
+EOF
+    return 0
+}
+
+has_p11kit() {
+    if ! command -v p11-kit >/dev/null 2>&1; then
+        1>&2 echo "p11-kit is required, but not found."
+        return 1
+    fi
+    return 0
+}
+
+# checks if the location to write is the default trust store. extra caution is
+# needed when re-writing the system-wide store (e.g. serialization, privilege
+# checks and so on).
+is_system_store() {
+    [ "$CLR_TRUST_STORE" = "$CLR_TRUST_STORE_DFLT" ]
+}
+
+detect_c_rehash() {
+    if [ -z "$INTERNAL_C_REHASH" ] && command -v c_rehash >/dev/null 2>&1; then
+        # use c_rehash
+        C_REHASH_CMD=c_rehash
+    else
+        test -n "$VERBOSE" && echo "Using internal rehash"
+        C_REHASH_CMD=c_rehash_internal
+    fi
+    return 0
+}
+
+sig_ignore() {
+    :
+}
+
+lock() {
+    local lock_path
+    local ret
+    # lock should be on the same block device so that we could ln to it
+    lock_path=$(mktemp "${CLR_TRUST_LOCK_FILE}.XXXXXX")
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        return $ret
+    fi
+    ln "$lock_path" "$CLR_TRUST_LOCK_FILE" >/dev/null 2>&1
+    ret=$?
+    rm "$lock_path"
+    return $ret
+}
+
+unlock() {
+    rm -f "${CLR_TRUST_LOCK_FILE}"
+}
+
+# takes cert file as a single argument
+# returns 0 if root ca, 1 otherwise
+is_root_ca() {
+    # if issuer and subject match, then it's a self-signed certificate, the only
+    # indication of a Root CA we need to take into account (X.509v3 extensions
+    # are not)
+    t=$(openssl x509 -in "$1" -noout -issuer -subject 2>/dev/null      \
+            | sed -e 's/^\(issuer\|subject\)=//' | uniq | wc -l)
+    test $t -eq 1
+}
+
+is_single_cert() {
+    # each certificate provided as input to clrtrust must contain single
+    # certificate, so it can be used in CAPath. in other words, OpenSSL's bundle
+    # certificates are not accepted. this function checks for that
+    t=$(cat "$1" | grep 'BEGIN \(X509 \|TRUSTED \|\)CERTIFICATE' | wc -l)
+    test $t -eq 1
+}
+
+##### DEFAULT LOCATIONS
+
+# trust store default location
+CLR_TRUST_STORE_DFLT=/var/cache/ca-certs
+CLR_TRUST_STORE=${CLR_TRUST_STORE:-$CLR_TRUST_STORE_DFLT}
+
+# user-supplied, local source of trust
+CLR_LOCAL_TRUST_SRC=${CLR_LOCAL_TRUST_SRC:-/etc/ca-certs}
+
+# Clear Linux-supplied source of trust
+CLR_CLEAR_TRUST_SRC=${CLR_CLEAR_TRUST_SRC:-/usr/share/ca-certs}
+
+##### ERROR CODES
+# 0 is always success, used literally
+EPERM=1         # operation not permitted
+EBUSY=16        # resourse busy (cannot acquire trust store lock)
+EINVAL=22       # invalid argument
+EBADST=127      # invalid state / health check does not pass
+EERR=255        # general error
+
+##### LOCATION OF THE HELPER
+# always favor env override. if not, prefer the helper that is found next to the
+# script itself (it indicates the development environment). if not, look at the
+# configured location.
+LIBEXEC_DIR=/usr/libexec
+CLR_HELPER_NAME=clrtrust-helper
+for helper_dir in ${CLR_LIBEXEC_DIR:+"${CLR_LIBEXEC_DIR}"} "$(dirname $0)" "${LIBEXEC_DIR}"; do
+    if [ -x "${helper_dir}/${CLR_HELPER_NAME}" ]; then
+        CLR_HELPER_CMD="${helper_dir}/${CLR_HELPER_NAME}"
+        break
+    fi
+done
+
+if [ ! -x "$CLR_HELPER_CMD" ]; then
+    1>&2 echo "Cannot locate the helper executable (${CLR_HELPER_NAME})"
+    exit $EBADST
+fi
+
+# get absolute path to the helper (to be able to run in subshells)
+if [[ "${CLR_HELPER_CMD}" != /* ]]; then
+    CLR_HELPER_CMD=$(realpath "${CLR_HELPER_CMD}")
+fi
+
+##### LOCK FILE PATH
+# absolute dirs where we can have lock, must be writeable. potentially, the
+# choice of lock directory could differ between two parallel runs of clrtrust,
+# but we're explicitly not protecting against that
+LOCK_DIRS="/run/lock /var/lock /tmp"
+for lock_dir in $LOCK_DIRS; do
+    if [ -d $lock_dir ] && [ -w $lock_dir ]; then
+        CLR_TRUST_LOCK_FILE=$lock_dir/clrtrust.lock
+        break
+    fi
+done
+
+if [ -z "$CLR_TRUST_LOCK_FILE" ]; then
+    1>&2 cat <<EOF
+Cannot find directory for lock file. Looked in ${LOCK_DIRS}.
+EOF
+    exit $EBADST
+fi
+
+# takes single argument: a directory
+# the caller should grab the stdout of the call, it will contain found cert info
+# in form of:
+# <file name>\t<sha-256 fingerprint>
+find_certs() {
+    local dir=$1
+    if [ -z $dir ]; then return 255; fi
+    if [ ! -d $dir ]; then return 255; fi
+    find $dir -maxdepth 1 -type f | "${CLR_HELPER_CMD}" -f
+
+    # NB: CLR_HELPER_CMD will return 2 exit status if some of the certificates
+    # cannot be opened/processed. calls to find_certs rely on this fact
+    # throughout this script.
+}
+
+find_all_certs() {
+    local ret
+    local nret
+    find_certs $CLR_CLEAR_TRUST_SRC/trusted
+    ret=$?
+    find_certs $CLR_LOCAL_TRUST_SRC/trusted
+    nret=$?
+    if [ $nret -ne 0 ]; then
+        ret=$nret
+    fi
+    return $ret
+}
+
+filter_bad_certs() {
+    local bad_cert_files=$(echo "$1" | sed -ne '/\tERROR$/ { s/\tERROR$//; p }')
+    if [ -n "$bad_cert_files" ]; then
+        for bad_file in "$bad_cert_files"; do
+            1>&2 echo "$bad_file is not a PEM-encoded X.509 certificate. Skipping..."
+        done
+    fi
+    echo "$1" | sed -e '/\tERROR$/d'
+}
+
+# a c_rehash implementation for creating openssl-style CApath. this
+# implementation is much simpler than openssl's one: it is designed to rehash a
+# newly created store. it only takes directory to process as the argument and
+# no options. it further assumes that it runs on a pristine directory where
+# every file is a valid certificate, no duplicates (clrtrust ensures it prior to
+# calling this function). also, it is called on a stage directory, unique to
+# each clrtrust process, so no concurrent execution is assumed.
+c_rehash_internal() {
+    local dir=$1
+    if [ -z "$dir" ] || [ ! -d "$dir" ] || [ ! -w "$dir" ]; then
+        return 1
+    fi
+    (
+        cd "$dir"
+        hashes=$(find . -maxdepth 1 -type f | "${CLR_HELPER_CMD}" -s)
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
+        echo "$hashes" | while IFS=$'\t' read f h; do
+            lnno=0
+            while ! ln -s "$f" "${h}.${lnno}" && ((lnno++ < 100)); do
+                :
+            done 2>/dev/null
+        done
+    )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    return 0
+}
+
+print_verbose_error() {
+    test -n "$VERBOSE" && 1>&2 printf "%s" "$@" && 1>&2 echo
+}
+
+print_check_help() {
+    cat <<EOF
+Usage: ${BASENAME} check [-h|--help] [-v|--verbose]
+
+    Checks the environment and reports issues found.
+
+    -h | --help         Prints this help message and exits
+    -v | --verbose      Provides extra explanations for the errors encountered
+EOF
+}
+
+cmd_check() {
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+            ("-h"|"--help")
+                print_check_help
+                return 0
+                ;;
+            ("-v"|"--verbose")
+                VERBOSE=1
+                shift
+                ;;
+            (*)
+                print_check_help
+                return $EINVAL
+                ;;
+        esac
+    done
+
+    if [ -e "${CLR_LOCAL_TRUST_SRC}" ]; then
+        if [ ! -d "${CLR_LOCAL_TRUST_SRC}" ]; then
+            1>&2 echo "${CLR_LOCAL_TRUST_SRC} must be a directory."
+            print_verbose_error                                                 \
+"${CLR_LOCAL_TRUST_SRC} is used by ${BASENAME} to store local (user-added)"      \
+" trust and distrust data."
+            return $EBADST
+        fi
+        if [ -e "${CLR_LOCAL_TRUST_SRC}/distrusted" ] && [ ! -d "${CLR_LOCAL_TRUST_SRC}/distrusted" ]; then
+            1>&2 echo "$CLR_LOCAL_TRUST_SRC/distrusted must be a directory."
+            print_verbose_error                                                 \
+"${CLR_LOCAL_TRUST_SRC}/trusted is a directory used by ${BASENAME} to store"     \
+" trusted root CA certificates."
+            return $EBADST
+        fi
+        if [ -e "${CLR_LOCAL_TRUST_SRC}/trusted" ] && [ ! -d "${CLR_LOCAL_TRUST_SRC}/trusted" ]; then
+            1>&2 echo "$CLR_LOCAL_TRUST_SRC/trusted must be a directory."
+            print_verbose_error                                                 \
+"${CLR_LOCAL_TRUST_SRC}/distrusted is a directory used by ${BASENAME} to store"  \
+"distrusted root CA certificates."
+            return $EBADST
+        fi
+    fi # it's OK if CLR_LOCAL_TRUST_SRC does not exist
+
+    if [ -e "${CLR_CLEAR_TRUST_SRC}" ]; then
+        for dir in "${CLR_CLEAR_TRUST_SRC}" "${CLR_CLEAR_TRUST_SRC}/trusted"; do
+            if [ ! -d "${dir}" ]; then
+                1>&2 echo "${dir} must be a directory."
+                print_verbose_error                                             \
+"${dir} is a directory which contains trust and distrust data provided by"       \
+" Clear: Linux. It is installed initially and updated by swupd. Remove ${dir}"    \
+" and run 'swupd verify --fix' to reinstall."
+                return $EBADST
+            fi
+        done
+    else # it's not OK if CLR_CLEAR_TRUST_SRC does not exist
+        1>&2 echo "${CLR_CLEAR_TRUST_SRC} does not exist."
+        print_verbose_error                                                     \
+"${CLR_CLEAR_TRUST_SRC} is a directory which contains trust and distrust data"   \
+" provided by Clear Linux. It is installed initially and updated by swupd. Run"   \
+" 'swupd verify --fix' to reinstall."
+        return $EBADST
+    fi
+
+    dir=$(dirname ${CLR_TRUST_STORE})
+    if [ ! -e "$dir" ]; then
+        1>&2 echo "${dir} does not exit."
+    fi
+
+    if is_system_store; then
+        usr="root"
+    else
+        usr=${USER}
+    fi
+
+    if [ -z ${usr} ]; then
+        # this is most likely means mock build, but even if not the checks below
+        # do not apply if the variable is not set
+        return 0
+    fi
+
+    stat=($(stat -L -c "0%a %G %U" "$dir"))
+    if [ $? -ne 0 ]; then
+        return $EERR
+    fi
+    ownusr=${stat[2]}
+    owngrp=${stat[1]}
+    perm=${stat[0]}
+
+    if [ "$ownusr" = "$usr" ] && (( $perm & 0200 )); then
+        true
+    elif (( $perm & 0002 )); then
+        true
+    elif (( $perm & 0020 )); then
+        grps=$(groups $usr)
+        found=0
+        for g in $grps; do
+            if [ $g = $owngrp ]; then
+                found=1
+            fi
+        done
+        if [ $found -ne 1 ]; then
+            1>&2 echo "${dir} is not writeable for ${usr}."
+            print_verbose_error         \
+"${dir} must be writeable: the store will be generated at ${CLR_TRUST_STORE}"
+            return $EPERM
+        fi
+    else
+        1>&2 echo "${dir} is not writeable for ${usr}."
+        print_verbose_error             \
+"${dir} must be writeable: the store will be generated at ${CLR_TRUST_STORE}"
+        return $EPERM
+    fi
+
+    return 0
+}
+
+ensure_local_trust_src() {
+    mkdir -p ${CLR_LOCAL_TRUST_SRC}/trusted     \
+             ${CLR_LOCAL_TRUST_SRC}/distrusted   \
+             &>/dev/null
+}
+
+print_generate_help() {
+    cat <<EOF
+Usage: ${BASENAME} generate [-h|--help]
+
+    This command does not take arguments.
+
+    -h | --help         Prints this help message and exits
+    -f | --force        Force generation of the store
+
+    The store is generated from the following locations:
+        ${CLR_CLEAR_TRUST_SRC}/trusted
+        ${CLR_LOCAL_TRUST_SRC}/trusted
+        ${CLR_LOCAL_TRUST_SRC}/distrusted
+EOF
+}
+
+cmd_generate() {
+    local ca_certs
+    local dup_certs
+    local distrust_certs
+    local ca_certs_cnt
+    local dup_certs_cnt
+    local distrust_certs_cnt
+    local tmp
+    local ret=0
+    local opt_skip_check # this option is used when called internally after the
+                         # a check has been performed
+    local opt_force=0
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+            ("-h"|"--help")
+                print_generate_help
+                return 0
+                ;;
+            ("-s") # internal option
+                opt_skip_check=1
+                shift
+                ;;
+            ("-f"|"--force")
+                opt_force=1
+                shift
+                ;;
+            (*)
+                print_generate_help
+                return $EINVAL
+                ;;
+        esac
+    done
+
+    if [ -n "$opt_skip_check" ]; then
+        # run check
+        cmd_check
+        ret=$?
+        if [ $ret -ne 0 ]; then
+            return $ret
+        fi
+    fi
+
+    # find all the certificates
+    ca_certs=$(find_all_certs)
+    if [ $? -eq 2 ]; then
+        ca_certs=$(filter_bad_certs "$ca_certs")
+        ret=$EBADST
+    fi
+
+    if [ -z "${ca_certs}" ] && is_system_store && [ $opt_force -ne 1 ]; then
+        1>&2 cat <<EOF
+No certificates were found in:
+    ${CLR_LOCAL_TRUST_SRC}/trusted
+    ${CLR_CLEAR_TRUST_SRC}/trusted
+Will not generate empty store. Use --force to override.
+EOF
+        return $EBADST
+    fi
+
+    # handle the duplicates
+    dup_certs=$(echo "${ca_certs}" | cut -f 2 | sort | uniq -d)
+    if [ -n "$dup_certs" ]; then
+        dup_certs_cnt=$(echo "$dup_certs" | wc -l)
+        echo "$dup_certs_cnt certificate(s) are duplicated. Cleaning up..."
+        for h in ${dup_certs}; do
+            tmp=$(echo "${ca_certs}" | grep "${h}" | head -1)
+            ca_certs=$(echo "${ca_certs}" | grep -v "${h}")
+            ca_certs="${ca_certs}
+$tmp"
+        done
+    fi
+
+    # remove the distrusted ones
+    distrust_certs=$(find_certs $CLR_LOCAL_TRUST_SRC/distrusted)
+    if [ $? -eq 2 ]; then
+        distrust_certs=$(filter_bad_certs "$distrust_certs")
+        ret=$EBADST
+    fi
+    ca_certs_cnt=$(echo "$ca_certs" | wc -l)
+    if [ -n "$distrust_certs" ]; then
+        distrust_certs_cnt=$(echo "$distrust_certs" | wc -l)
+        echo "Distrusting $distrust_certs_cnt certificate(s)."
+        for h in $(echo "$distrust_certs" | cut -f 2); do
+            ca_certs=$(echo "$ca_certs" | grep -v "${h}")
+        done
+    fi
+
+    # write the store
+    umask 022
+
+    CLR_STORE_STAGE=$(mktemp -d)
+    chmod 755 $CLR_STORE_STAGE
+    mkdir -p $CLR_STORE_STAGE/anchors
+    mkdir -p $CLR_STORE_STAGE/compat
+
+    if [ -n "${ca_certs}" ]; then
+        echo "${ca_certs}" | cut -f 1 | xargs -d '\n' cp -t $CLR_STORE_STAGE/anchors
+    fi
+
+    if ! (cd "$CLR_STORE_STAGE/anchors" && $C_REHASH_CMD . >/dev/null 2>&1); then
+        1>&2 echo "Error rehashing the anchors."
+        rm -r $CLR_STORE_STAGE
+        return $EERR
+    fi
+
+    trap sig_ignore INT HUP TERM
+    if is_system_store && ! lock; then
+        trap - INT HUP TERM
+        1>&2 cat <<EOF
+Failed to acquire lock file: $CLR_TRUST_LOCK_FILE.
+If no other clrtrust process is running, remove the lock file manually and try again.
+EOF
+        return $EBUSY
+    fi
+    TMP=$(mktemp -u)
+    if [ -e $CLR_TRUST_STORE ]; then
+        mv -f $CLR_TRUST_STORE $TMP
+    fi
+    mv $CLR_STORE_STAGE $CLR_TRUST_STORE
+    if [ -e $TMP ]; then
+        rm -rf $TMP
+    fi
+
+    # generate the compat after the store is deployed: p11-kit is configured to
+    # look at the default location
+    p11-kit extract                 \
+            --filter=ca-anchors     \
+            --format=java-cacerts   \
+            --purpose=server-auth   \
+            $CLR_TRUST_STORE/compat/ca-roots.keystore
+    chmod 644 $CLR_TRUST_STORE/compat/ca-roots.keystore
+
+    p11-kit extract                 \
+            --filter=ca-anchors     \
+            --format=pem-bundle     \
+            --purpose=server-auth   \
+            $CLR_TRUST_STORE/compat/ca-roots.pem
+    chmod 644 $CLR_TRUST_STORE/compat/ca-roots.pem
+
+    # Compatibility link for statically linked binaries
+    # This will yield /etc/ssl/certs/ca-certificates.crt path through tmpfiles
+    ln -s ../compat/ca-roots.pem $CLR_TRUST_STORE/anchors/ca-certificates.crt
+
+    is_system_store && unlock
+    trap - INT HUP TERM
+
+    echo "Trust store generated at ${CLR_TRUST_STORE}"
+
+    return $ret
+}
+
+print_add_help() {
+    cat <<EOF
+Usage: ${BASENAME} add [-h|--help] <filename>...
+
+    -h | --help         Prints this help message and exits
+    -f | --force        Force addition of the certificate if possible
+
+    <filename>...      List of files containing a PEM-encoded Root CA certificate(s)
+EOF
+}
+
+cmd_add() {
+    local files
+    local ret
+    local ca_certs
+    local err
+    local errors
+    local opt_force=0
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+            ("-h"|"--help")
+                print_add_help
+                return 0
+                ;;
+            ("-f"|"--force")
+                opt_force=1
+                shift
+                ;;
+            (*)
+                # first empty line will be deleted few lines later
+                files="$files
+$1"
+                shift
+                ;;
+        esac
+    done
+
+    # run check
+    cmd_check
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        return $ret
+    fi
+
+    if [ -z "$files" ]; then
+        1>&2 echo "Specify certificate(s) to add."
+        print_add_help
+        return $EINVAL
+    fi
+
+    ensure_local_trust_src
+
+    files=$(echo "$files" | sed -e '1d')
+    ca_certs=$(find_all_certs)
+    if [ $? -eq 2 ]; then
+        ca_certs=$(filter_bad_certs "$ca_certs")
+        ret=$EBADST
+    fi
+    distrusted_certs=$(find_certs $CLR_LOCAL_TRUST_SRC/distrusted)
+    if [ $? -eq 2 ]; then
+        distrusted_certs=$(filter_bad_certs "$distrusted_certs")
+        ret=$EBADST
+    fi
+
+    err=$(mktemp)
+    tmp=$(mktemp)
+
+    trap sig_ignore INT HUP TERM
+
+    echo "$files" | while read f; do
+        if [ ! -f "$f" ]; then
+            1>&2 echo "No such file $f. Skipping..."
+            continue
+        fi
+        if ! is_single_cert "$f"; then
+            1>&2 echo "$f must contain single certificate. Skipping..."
+            continue
+        fi
+        finger=$(openssl x509 -in "${f}" -noout -fingerprint -SHA1 2>$tmp)
+        if [ $? -ne 0 ]; then
+            1>&2 echo "$f is not a PEM-encoded X.509 certificate. Skipping..."
+            cat $tmp
+            continue
+        fi
+        finger=${finger#SHA1 Fingerprint=}
+        if ! is_root_ca "${f}" && [ $opt_force -ne 1 ]; then
+            1>&2 cat <<EOF
+Certificate $f is not a Root CA. Use --force and proper judgement to enforce.
+EOF
+            continue
+        fi
+
+        if ! echo "$ca_certs" | grep "$finger" >/dev/null 2>&1; then
+            cp "${f}" $CLR_LOCAL_TRUST_SRC/trusted
+        else
+            # if it's among trusted certs, check if it's distrusted. if so,
+            # "adding" it then is removing it from distrusted before the next
+            # store generation
+            distrusted_f=$(echo "${distrusted_certs}" | grep "$finger" | cut -f 1)
+            if [ -n "${distrusted_f}" ]; then
+                rm "${distrusted_f}"
+            else
+                cat <<EOF
+Certificate $f is already trusted. Not adding duplicates.
+EOF
+                continue
+            fi
+        fi
+    done 2>$err
+    trap - INT HUP TERM
+    errors=$(cat $err)
+    if [ -n "${errors}" ]; then
+        # if some files had errors, return error exit code
+        ret=$EERR
+        1>&2 cat $err
+    else
+        ret=0
+    fi
+    rm $tmp $err
+    cmd_generate -s
+    return $ret
+}
+
+print_list_help() {
+    cat <<EOF
+Usage: ${BASENAME} list [-h|--help]
+
+    -h | --help         Prints this help message and exits
+
+    Prints the list of certificates, each in form of
+        id: <id>
+            File: <filename>
+            Authority: <issuer name>
+            Expires: <expiration date>
+EOF
+}
+
+cmd_list() {
+    local certs
+    local info
+    local indent
+    local err
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+            ("-h"|"--help")
+                print_list_help
+                return 0
+                ;;
+            (*)
+                print_list_help
+                return $EINVAL
+                ;;
+        esac
+        shift
+    done
+    # 4 spaces for sed
+    indent="\ \ \ \ "
+    if [ ! -d ${CLR_TRUST_STORE}/anchors ]; then
+        1>&2 echo "${CLR_TRUST_STORE} is not a trust store." \
+            " Use ${BASENAME} generate to create the store."
+        return $EERR
+    fi
+    certs=$(find ${CLR_TRUST_STORE}/anchors -maxdepth 1 -type f | LC_COLLATE=C sort)
+    if [ -z "${certs}" ]; then
+        print_verbose_error "Nothing is trusted. No anchors found in ${CLR_TRUST_STORE}."
+        return 0
+    fi
+
+    echo "$certs" | while read f; do
+        info=$(openssl x509 -in "${f}" -noout -fingerprint -SHA1 -issuer -enddate)
+        if [ $? -ne 0 ]; then
+            1>&2 echo "${f} is not an X.509 certificate."
+        fi
+        info=$(echo "$info" |                                         \
+            sed -e "s/^SHA1 Fingerprint=/id: /"                        \
+                    -e "2i${indent}File: ${f}"                          \
+                    -e "s/^issuer=\s*/${indent}Authority: /"             \
+                    -e "s/^notAfter=\s*/${indent}Expires: /")
+        echo "$info"
+    done
+
+    return 0
+}
+
+print_remove_help() {
+    cat <<EOF
+Usage: ${BASENAME} remove [-f|--force] <filename|id>...
+
+    Distrusts specified Certificate Authorities. Each CA can be represented
+    either by a file containing PEM-encoded X.509 certificate or an id as
+    obtained from the list command.
+
+    -f | --force        Forces removal of certificates
+    -h | --help         Prints this help message and exits
+
+    <filename|id>...    List of files and/or ids to remove from the store
+EOF
+}
+
+cmd_remove() {
+    local files
+    local ids
+    local err
+    local out
+    local invld_files
+    local certs
+    local opt_force
+    local ret
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+            ("-h"|"--help")
+                print_remove_help
+                return 0
+                ;;
+            ("-f"|"--force")
+                # TODO: implement forcing
+                opt_force=1
+                true
+                ;;
+            (*)
+                if [ -f "$1" ]; then
+                    # need newline as a separator in case filename comes with
+                    # spaces. first empty line will be deleted later.
+                    files="$files
+$1"
+                else
+                    ids="$ids $1"
+                fi
+                ;;
+        esac
+        shift
+    done
+
+    # run check
+    cmd_check
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        return $ret
+    fi
+
+    ensure_local_trust_src
+
+    err=$(mktemp)
+    out=$(mktemp)
+
+    files=$(echo "$files" | sed -e '1d')
+
+    test -n "$files" && echo "$files" | while read f; do
+        finger=$(openssl x509 -in "${f}" -noout -fingerprint -SHA1 2>/dev/null)
+        if [ $? -ne 0 ]; then
+            1>&2 echo "${f} is not an X.509 certificate."
+            continue
+        fi
+        finger=${finger#SHA1 Fingerprint=}
+        printf "%s\t%s\n" "${f}" "${finger}"
+    done >$out 2>$err
+
+    invld_files=$(cat $err)
+
+    if [ -n "$invld_files" ]; then
+        2>&1 echo "$invld_files"
+        ret=$EERR
+    fi
+
+    files=$(cat $out)
+    ids=$(echo $ids && (echo "$files" | cut -f 2))
+    certs=$(find_all_certs)
+    if [ $? -eq 2 ]; then
+        certs=$(filter_bad_certs "$certs")
+        ret=$EINVAL
+    fi
+    for id in $ids; do
+        f=$(echo "$certs" | grep $id)
+        if [ $? -eq 0 ]; then
+            echo "$f" | cut -f 1
+        else
+            f=$(echo "$files" | grep $id | cut -f 1)
+            if [ -z $f ]; then
+                1>&2 echo "Certificate id $id not found."
+            else
+                1>&2 echo "Certificate id $id not found (file: $f)."
+            fi
+        fi
+    done >$out
+
+    files=$(cat $out)
+    if [ -n "$files" ]; then
+        echo "$files" | while read f; do
+            if [ ! -e $CLR_LOCAL_TRUST_SRC/distrusted ]; then
+                mkdir $CLR_LOCAL_TRUST_SRC/distrusted
+            fi
+            # if certificate is provided by clear trust store, distrust it,
+            # otherwise remove it
+            if [ $(dirname $f) = $CLR_CLEAR_TRUST_SRC/trusted ]; then
+                cp "$f" $CLR_LOCAL_TRUST_SRC/distrusted
+            else
+                rm "$f"
+            fi
+        done
+        cmd_generate -s
+    else
+        echo "Nothing to do."
+    fi
+    rm $err $out
+    return $ret
+}
+
+print_help() {
+    cat <<EOF
+Usage: ${BASENAME} [-v|--verbose] [-h|--help] [-c|--internal-rehash] <command> [options]
+
+    -v | --verbose          Shows more details about execution
+    -c | --internal-rehash  Forces use of internal implementation of c_rehash
+    -h | --help             Prints this message
+
+    Commands
+        generate    generates the trust store
+        list        list CAs
+        add         add trust to a CA
+        remove      remove trust to a CA
+        restore     restore trust to previously removed CA
+        check       sanity/consistency check of the trust store
+
+${BASENAME} <command> --help to get help on specific command.
+EOF
+}
+
+##### GLOBAL VARS/OPTIONS
+COMMAND=""
+BASENAME=$(basename $0) # this may not work, but we don't care too much
+ARGS=$*
+
+if ! has_openssl; then
+    exit $EBADST
+fi
+
+if ! has_p11kit; then
+    exit $EBADST
+fi
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        ("-v"|"--verbose")
+            VERBOSE=1
+            shift
+            continue
+            ;;
+        ("-h"|"--help")
+            print_help
+            exit 0
+            ;;
+        ("-c"|"--internal-rehash")
+            INTERNAL_C_REHASH=1
+            shift
+            continue
+            ;;
+        (*)
+            COMMAND=$1
+            shift
+            ;;
+    esac
+    if [ -n "$COMMAND" ]; then
+        break
+    fi
+done
+
+detect_c_rehash
+
+case $COMMAND in
+    ("generate"|"add"|"remove"|"restore")
+        # must be root if writing to the default location
+        if is_system_store; then
+            is_root || exit $EPERM
+        fi
+        ;;
+esac
+
+case $COMMAND in
+    ("generate")
+        cmd_generate "$@"
+        exit $?
+        ;;
+    ("add")
+        cmd_add "$@"
+        exit $?
+        ;;
+    ("list")
+        cmd_list "$@"
+        exit $?
+        ;;
+    ("remove")
+        cmd_remove "$@"
+        exit $?
+        ;;
+    ("check")
+        cmd_check "$@"
+        exit $?
+        ;;
+    ("restore")
+        1>&2 echo "$COMMAND not yet supported."
+        exit $EINVAL
+        ;;
+    (*)
+        if [ -n "$COMMAND" ]; then
+            1>&2 echo "Command not understood: ${COMMAND}"
+        fi
+        print_help
+        exit $EINVAL
+        ;;
+esac
+
+# vim: si:noai:nocin:tw=80:sw=4:ts=4:et:nu

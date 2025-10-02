@@ -1,0 +1,10 @@
+# [TITLE]: devpkg-libcxx
+# [DESCRIPTION]: Development against LLVM's libc++ Stadnard C++ Library implementation.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Thiago Macieira <thiago.macieira@intel.com>
+
+include(devpkg-base)
+
+libcxx-dev

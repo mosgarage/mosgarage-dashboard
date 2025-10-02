@@ -1,0 +1,9 @@
+[Unit]
+Description=Proxy AutoConfig discovery service (lease directory watch)
+
+[Path]
+DirectoryNotEmpty=/run/systemd/netif/leases
+DirectoryNotEmpty=/run/NetworkManager/system-connections
+
+[Install]
+WantedBy=multi-user.target

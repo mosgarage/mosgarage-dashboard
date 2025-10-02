@@ -1,0 +1,110 @@
+'\" t
+.TH "SYSTEMD\-HOMED\&.SERVICE" "8" "" "systemd 252" "systemd-homed.service"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+systemd-homed.service, systemd-homed \- Home Area/User Account Manager
+.SH "SYNOPSIS"
+.PP
+systemd\-homed\&.service
+.PP
+/usr/lib/systemd/systemd\-homed
+.SH "DESCRIPTION"
+.PP
+\fBsystemd\-homed\fR
+is a system service that may be used to create, remove, change or inspect home areas (directories and network mounts and real or loopback block devices with a filesystem, optionally encrypted)\&.
+.PP
+Most of
+\fBsystemd\-homed\fR\*(Aqs functionality is accessible through the
+\fBhomectl\fR(1)
+command\&.
+.PP
+See the
+\m[blue]\fBHome Directories\fR\m[]\&\s-2\u[1]\d\s+2
+documentation for details about the format and design of home areas managed by
+systemd\-homed\&.service\&.
+.PP
+Each home directory managed by
+systemd\-homed\&.service
+synthesizes a local user and group\&. These are made available to the system using the
+\m[blue]\fBUser/Group Record Lookup API via Varlink\fR\m[]\&\s-2\u[2]\d\s+2, and thus may be browsed with
+\fBuserdbctl\fR(1)\&.
+.SH "KEY MANAGEMENT"
+.PP
+User records are cryptographically signed with a public/private key pair (the signature is part of the JSON record itself)\&. For a user to be permitted to log in locally the public key matching the signature of their user record must be installed\&. For a user record to be modified locally the private key matching the signature must be installed locally, too\&. The keys are stored in the
+/var/lib/systemd/home/
+directory:
+.PP
+/var/lib/systemd/home/local\&.private
+.RS 4
+The private key of the public/private key pair used for local records\&. Currently, only a single such key may be installed\&.
+.RE
+.PP
+/var/lib/systemd/home/local\&.public
+.RS 4
+The public key of the public/private key pair used for local records\&. Currently, only a single such key may be installed\&.
+.RE
+.PP
+/var/lib/systemd/home/*\&.public
+.RS 4
+Additional public keys\&. Any users whose user records are signed with any of these keys are permitted to log in locally\&. An arbitrary number of keys may be installed this way\&.
+.RE
+.PP
+All key files listed above are in PEM format\&.
+.PP
+In order to migrate a home directory from a host
+"foobar"
+to another host
+"quux"
+it is hence sufficient to copy
+/var/lib/systemd/home/local\&.public
+from the host
+"foobar"
+to
+"quux", maybe calling the file on the destination
+/var/lib/systemd/home/foobar\&.public, reflecting the origin of the key\&. If the user record should be modifiable on
+"quux"
+the pair
+/var/lib/systemd/home/local\&.public
+and
+/var/lib/systemd/home/local\&.private
+need to be copied from
+"foobar"
+to
+"quux", and placed under the identical paths there, as currently only a single private key is supported per host\&. Note of course that the latter means that user records generated/signed before the key pair is copied in, lose their validity\&.
+.SH "SEE ALSO"
+.PP
+\fBsystemd\fR(1),
+\fBhomed.conf\fR(5),
+\fBhomectl\fR(1),
+\fBpam_systemd_home\fR(8),
+\fBuserdbctl\fR(1),
+\fBorg.freedesktop.home1\fR(5)
+.SH "NOTES"
+.IP " 1." 4
+Home Directories
+.RS 4
+\%https://systemd.io/HOME_DIRECTORY
+.RE
+.IP " 2." 4
+User/Group Record Lookup API via Varlink
+.RS 4
+\%https://systemd.io/USER_GROUP_API
+.RE

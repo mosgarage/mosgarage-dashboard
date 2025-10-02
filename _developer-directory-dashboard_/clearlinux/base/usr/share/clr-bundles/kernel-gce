@@ -1,0 +1,9 @@
+# [TITLE]: kernel-gce
+# [DESCRIPTION]: Run the Google Compute Engine (GCE) specific kernel.
+# [STATUS]: WIP
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools, Kernel
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+include(bootloader)
+include(kernel-native)
+linux

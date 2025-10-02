@@ -1,0 +1,16 @@
+# [TITLE]: modules
+# [DESCRIPTION]: Provides dynamic modification of a user's environment
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: Juro Bystricky <juro.bystricky@intel.com>
+
+
+# start of custom additions (edits outside this area will be removed automatically)
+tcl
+include(python3-basic)
+include(tcl-basic)
+# end of custom additions
+
+# main package
+modules

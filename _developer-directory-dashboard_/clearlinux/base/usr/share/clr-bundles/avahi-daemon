@@ -1,0 +1,12 @@
+# [TITLE]: avahi-daemon
+# [DESCRIPTION]: Avahi Multicast DNS Responder (GLib Support)
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: Auke Kok <auke-jan.h.kok@intel.com>
+
+include(libglib)
+include(qt-basic)
+
+avahi-extras
+include(libevent-lib)

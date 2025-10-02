@@ -1,0 +1,14 @@
+# [TITLE]: audio-pipewire
+# [DESCRIPTION]: Multimedia framework for capture and playback
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Other
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+include(libX11client)
+
+pipewire
+wireplumber
+include(libstdcpp)
+include(icu4c-lib)
+# include(gnome-base-libs)
+include(pulseaudio)

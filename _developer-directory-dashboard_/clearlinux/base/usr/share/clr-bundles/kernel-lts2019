@@ -1,0 +1,20 @@
+# [TITLE]: kernel-lts2019
+# [DESCRIPTION]: Run the long-term support 5.4 native kernel.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools, Kernel
+# [MAINTAINER]: Bernal Marin, Miguel <miguel.bernal.marin@linux.intel.com>
+console-autostart
+include(bootloader)
+include(libglib)
+include(linux-firmware)
+include(linux-firmware-extras)
+init-rdahead-extras
+irqbalance
+mcelog
+vbox-integration
+
+# kernel package
+linux-lts2019
+include(libnl)
+include(numactl)

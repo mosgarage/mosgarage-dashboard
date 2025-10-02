@@ -1,0 +1,26 @@
+# [TITLE]: cloud-native-basic
+# [DESCRIPTION]: Contains Clear Linux OS native software for cloud.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+include(ethtool)
+include(iproute2)
+include(p11-kit)
+include(libstdcpp)
+include(libglib)
+include(perl-basic)
+
+LVM2-bin
+LVM2-config
+cloud-native-setup
+cni
+cni-plugins
+containerd
+cri-o
+cri-tools
+ebtables
+helm
+kubernetes
+runc
+include(socat)

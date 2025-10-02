@@ -1,0 +1,30 @@
+# [TITLE]: kvm-host
+# [DESCRIPTION]: Run Kernel-based Virtual Machines (KVM).
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+include(libX11client)
+include(python3-basic)
+include(perl-basic)
+bridge-utils
+dmidecode
+dnsmasq
+ebtables
+edk2
+gettext
+include(iptables)
+libvirt
+nftables
+include(polkit)
+qemu
+qemu-extras
+include(libstdcpp)
+include(icu4c-lib)
+include(pulseaudio)
+include(lz4)
+include(libnl)
+include(libpcap-lib)
+include(numactl)
+include(vte-lib)
+include(libssh-lib)

@@ -1,0 +1,9 @@
+# [TITLE]: vim-minimal
+# [DESCRIPTION]: A completely bare version of Vim.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Productivity, Developer Tools, Editor
+# [MAINTAINER]: Auke Kok <auke-jan.h.kok@intel.com>
+vim-extras-minimal
+usrbinvi
+include(ncurses-lib)

@@ -1,0 +1,10 @@
+# [TITLE]: mariadb-clientlibs
+# [DESCRIPTION]: MariaDB Connector/C dynamic library/Database client libraries.
+# [STATUS]: Active
+# [CAPABILITIES]: Enable applications that connect to mariadb databases.
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Auke Kok <auke-jan.h.kok@intel.com>
+
+include(lib-openssl)
+
+mariadb-extras-clientlib

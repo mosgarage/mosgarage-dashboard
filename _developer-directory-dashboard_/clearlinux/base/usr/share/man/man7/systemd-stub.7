@@ -1,0 +1,552 @@
+'\" t
+.TH "SYSTEMD\-STUB" "7" "" "systemd 252" "systemd-stub"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+systemd-stub, sd-stub, linuxx64.efi.stub, linuxia32.efi.stub, linuxaa64.efi.stub \- A simple UEFI kernel boot stub
+.SH "SYNOPSIS"
+.PP
+/usr/lib/systemd/boot/efi/linuxx64\&.efi\&.stub
+.PP
+/usr/lib/systemd/boot/efi/linuxia32\&.efi\&.stub
+.PP
+/usr/lib/systemd/boot/efi/linuxaa64\&.efi\&.stub
+.PP
+\fIESP\fR/\&.\&.\&./\fIfoo\fR\&.efi\&.extra\&.d/*\&.cred
+.PP
+\fIESP\fR/\&.\&.\&./\fIfoo\fR\&.efi\&.extra\&.d/*\&.raw
+.PP
+\fIESP\fR/loader/credentials/*\&.cred
+.SH "DESCRIPTION"
+.PP
+\fBsystemd\-stub\fR
+(stored in per\-architecture files
+linuxx64\&.efi\&.stub,
+linuxia32\&.efi\&.stub,
+linuxaa64\&.efi\&.stub
+on disk) is a simple UEFI boot stub\&. An UEFI boot stub is attached to a Linux kernel binary image, and is a piece of code that runs in the UEFI firmware environment before transitioning into the Linux kernel environment\&. The UEFI boot stub ensures a Linux kernel is executable as regular UEFI binary, and is able to do various preparations before switching the system into the Linux world\&.
+.PP
+The UEFI boot stub looks for various resources for the kernel invocation inside the UEFI PE binary itself\&. This allows combining various resources inside a single PE binary image (usually called "Unified Kernel Image", or "UKI" for short), which may then be signed via UEFI SecureBoot as a whole, covering all individual resources at once\&. Specifically it may include:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The ELF Linux kernel images will be looked for in the
+"\&.linux"
+PE section of the executed image\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+OS release information, i\&.e\&. the
+\fBos-release\fR(5)
+file of the OS the kernel belongs to, in the
+"\&.osrel"
+PE section\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The initrd will be loaded from the
+"\&.initrd"
+PE section\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A compiled binary DeviceTree will be looked for in the
+"\&.dtb"
+PE section\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The kernel command line to pass to the invoked kernel will be looked for in the
+"\&.cmdline"
+PE section\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A boot splash (in Windows
+\&.BMP
+format) to show on screen before invoking the kernel will be looked for in the
+"\&.splash"
+PE section\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A set of cryptographic signatures for expected TPM2 PCR values when this kernel is booted, in JSON format, in the
+"\&.pcrsig"
+section\&. This is useful for implementing TPM2 policies that bind disk encryption and similar to kernels that are signed by a specific key\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A public key in PEM format matching this TPM2 PCR signature data in the
+"\&.pcrpkey"
+section\&.
+.RE
+.PP
+If UEFI SecureBoot is enabled and the
+"\&.cmdline"
+section is present in the executed image, any attempts to override the kernel command line by passing one as invocation parameters to the EFI binary are ignored\&. Thus, in order to allow overriding the kernel command line, either disable UEFI SecureBoot, or don\*(Aqt include a kernel command line PE section in the kernel image file\&. If a command line is accepted via EFI invocation parameters to the EFI binary it is measured into TPM PCR 12 (if a TPM is present)\&.
+.PP
+If a DeviceTree is embedded in the
+"\&.dtb"
+section, it replaces an existing DeviceTree in the corresponding EFI configuration table\&. systemd\-stub will ask the firmware via the
+"EFI_DT_FIXUP_PROTOCOL"
+for hardware specific fixups to the DeviceTree\&.
+.PP
+The contents of seven of these eight PE sections are measured into TPM PCR 11, that is otherwise not used\&. Thus, it can be pre\-calculated without too much effort\&. The
+"\&.pcrsig"
+section is not included in this PCR measurement, since it\*(Aqs supposed to contain signatures for the expected results for these measurements, i\&.e\&. of the outputs of the measurement operation, and thus cannot also be input to it\&.
+.PP
+When
+"\&.pcrsig"
+and/or
+"\&.pcrpkey"
+are present in a unified kernel image their contents are passed to the booted kernel in an synthetic initrd cpio archive that places them in the
+/\&.extra/tpm2\-pcr\-signature\&.json
+and
+/\&.extra/tpm2\-pcr\-public\-key\&.pem
+files\&. Typically, a
+\fBtmpfiles.d\fR(5)
+line then ensures they are copied into
+/run/systemd/tpm2\-pcr\-signature\&.json
+and
+/run/systemd/tpm2\-pcr\-public\-key\&.pem
+where they remain accessible even after the system transitions out of the initrd environment into the host file system\&. Tools such
+\fBsystemd-cryptsetup@.service\fR(8),
+\fBsystemd-cryptenroll\fR(1)
+and
+\fBsystemd-creds\fR(1)
+will automatically use files present under these paths to unlock protected resources (encrypted storage or credentials) or bind encryption to booted kernels\&.
+.SH "COMPANION FILES"
+.PP
+The
+\fBsystemd\-stub\fR
+UEFI boot stub automatically collects two types of auxiliary companion files optionally placed in drop\-in directories on the same partition as the EFI binary, dynamically generates
+\fBcpio\fR
+initrd archives from them, and passes them to the kernel\&. Specifically:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+For a kernel binary called
+\fIfoo\fR\&.efi, it will look for files with the
+\&.cred
+suffix in a directory named
+\fIfoo\fR\&.efi\&.extra\&.d/
+next to it\&. A
+\fBcpio\fR
+archive is generated from all files found that way, placing them in the
+/\&.extra/credentials/
+directory of the initrd file hierarchy\&. The main initrd may then access them in this directory\&. This is supposed to be used to store auxiliary, encrypted, authenticated credentials for use with
+\fILoadCredentialEncrypted=\fR
+in the UEFI System Partition\&. See
+\fBsystemd.exec\fR(5)
+and
+\fBsystemd-creds\fR(1)
+for details on encrypted credentials\&. The generated
+\fBcpio\fR
+archive is measured into TPM PCR 12 (if a TPM is present)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Similarly, files
+\fIfoo\fR\&.efi\&.extra\&.d/*\&.raw
+are packed up in a
+\fBcpio\fR
+archive and placed in the
+/\&.extra/sysext/
+directory in the initrd file hierarchy\&. This is supposed to be used to pass additional system extension images to the initrd\&. See
+\fBsystemd-sysext\fR(8)
+for details on system extension images\&. The generated
+\fBcpio\fR
+archive containing these system extension images is measured into TPM PCR 13 (if a TPM is present)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Files
+/loader/credentials/*\&.cred
+are packed up in a
+\fBcpio\fR
+archive and placed in the
+/\&.extra/global_credentials/
+directory of the initrd file hierarchy\&. This is supposed to be used to pass additional credentials to the initrd, regardless of the kernel being booted\&. The generated
+\fBcpio\fR
+archive is measured into TPM PCR 12 (if a TPM is present)
+.RE
+.PP
+These mechanisms may be used to parameterize and extend trusted (i\&.e\&. signed), immutable initrd images in a reasonably safe way: all data they contain is measured into TPM PCRs\&. On access they should be further validated: in case of the credentials case by encrypting/authenticating them via TPM, as exposed by
+\fBsystemd\-creds encrypt \-T\fR
+(see
+\fBsystemd-creds\fR(1)
+for details); in case of the system extension images by using signed Verity images\&.
+.SH "TPM PCR NOTES"
+.PP
+Note that when a unified kernel using
+\fBsystemd\-stub\fR
+is invoked the firmware will measure it as a whole to TPM PCR 4, covering all embedded resources, such as the stub code itself, the core kernel, the embedded initrd and kernel command line (see above for a full list)\&.
+.PP
+Also note that the Linux kernel will measure all initrds it receives into TPM PCR 9\&. This means every type of initrd will be measured two or three times: the initrd embedded in the kernel image will be measured to PCR 4, PCR 9 and PCR 11; the initrd synthesized from credentials will be measured to both PCR 9 and PCR 12; the initrd synthesized from system extensions will be measured to both PCR 4 and PCR 9\&. Let\*(Aqs summarize the OS resources and the PCRs they are measured to:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table\ \&1.\ \&OS Resource PCR Summary
+.TS
+allbox tab(:);
+lB lB.
+T{
+OS Resource
+T}:T{
+Measurement PCR
+T}
+.T&
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l.
+T{
+\fBsystemd\-stub\fR code (the entry point of the unified PE binary)
+T}:T{
+4
+T}
+T{
+Core kernel code (embedded in unified PE binary)
+T}:T{
+4 + 11
+T}
+T{
+OS release information (embedded in the unified PE binary)
+T}:T{
+4 + 11
+T}
+T{
+Main initrd (embedded in unified PE binary)
+T}:T{
+4 + 9 + 11
+T}
+T{
+Default kernel command line (embedded in unified PE binary)
+T}:T{
+4 + 11
+T}
+T{
+Overridden kernel command line
+T}:T{
+12
+T}
+T{
+Boot splash (embedded in the unified PE binary)
+T}:T{
+4 + 11
+T}
+T{
+TPM2 PCR signature JSON (embedded in unified PE binary, synthesized into initrd)
+T}:T{
+4 + 9
+T}
+T{
+TPM2 PCR PEM public key (embedded in unified PE binary, synthesized into initrd)
+T}:T{
+4 + 9 + 11
+T}
+T{
+Credentials (synthesized initrd from companion files)
+T}:T{
+9 + 12
+T}
+T{
+System Extensions (synthesized initrd from companion files)
+T}:T{
+9 + 13
+T}
+.TE
+.sp 1
+.SH "EFI VARIABLES"
+.PP
+The following EFI variables are defined, set and read by
+\fBsystemd\-stub\fR, under the vendor UUID
+"4a67b082\-0a4c\-41cf\-b6c7\-440b29bb8c4f", for communication between the boot stub and the OS:
+.PP
+\fILoaderDevicePartUUID\fR
+.RS 4
+Contains the partition UUID of the EFI System Partition the EFI image was run from\&.
+\fBsystemd-gpt-auto-generator\fR(8)
+uses this information to automatically find the disk booted from, in order to discover various other partitions on the same disk automatically\&.
+.RE
+.PP
+\fILoaderFirmwareInfo\fR, \fILoaderFirmwareType\fR
+.RS 4
+Brief firmware information\&. Use
+\fBbootctl\fR(1)
+to view this data\&.
+.RE
+.PP
+\fILoaderImageIdentifier\fR
+.RS 4
+The path of EFI executable, relative to the EFI System Partition\*(Aqs root directory\&. Use
+\fBbootctl\fR(1)
+to view this data\&.
+.RE
+.PP
+\fIStubInfo\fR
+.RS 4
+Brief stub information\&. Use
+\fBbootctl\fR(1)
+to view this data\&.
+.RE
+.PP
+\fIStubPcrKernelImage\fR
+.RS 4
+The PCR register index the kernel image, initrd image, boot splash, devicetree database, and the embedded command line are measured into, formatted as decimal ASCII string (e\&.g\&.
+"11")\&. This variable is set if a measurement was successfully completed, and remains unset otherwise\&.
+.RE
+.PP
+\fIStubPcrKernelParameters\fR
+.RS 4
+The PCR register index the kernel command line and credentials are measured into, formatted as decimal ASCII string (e\&.g\&.
+"12")\&. This variable is set if a measurement was successfully completed, and remains unset otherwise\&.
+.RE
+.PP
+\fIStubPcrInitRDSysExts\fR
+.RS 4
+The PCR register index the systemd extensions for the initrd, which are picked up from the file system the kernel image is located on\&. Formatted as decimal ASCII string (e\&.g\&.
+"13")\&. This variable is set if a measurement was successfully completed, and remains unset otherwise\&.
+.RE
+.PP
+Note that some of the variables above may also be set by the boot loader\&. The stub will only set them if they aren\*(Aqt set already\&. Some of these variables are defined by the
+\m[blue]\fBBoot Loader Interface\fR\m[]\&\s-2\u[1]\d\s+2\&.
+.SH "INITRD RESOURCES"
+.PP
+The following resources are passed as initrd cpio archives to the booted kernel, and thus make up the initial file system hierarchy in the initrd execution environment:
+.PP
+/
+.RS 4
+The main initrd from the
+"\&.initrd"
+PE section of the unified kernel image\&.
+.RE
+.PP
+/\&.extra/credentials/*\&.cred
+.RS 4
+Credential files (suffix
+"\&.cred") that are placed next to the unified kernel image (as described above) are copied into the
+/\&.extra/credentials/
+directory in the initrd execution environment\&.
+.RE
+.PP
+/\&.extra/global_credentials/*\&.cred
+.RS 4
+Similar, credential files in the
+/loader/credentials/
+directory in the file system the unified kernel image is placed in are copied into the
+/\&.extra/global_credentials/
+directory in the initrd execution environment\&.
+.RE
+.PP
+/\&.extra/sysext/*\&.raw
+.RS 4
+System extension image files (suffix
+"\&.raw") that are placed next to the unified kernel image (as described above) are copied into the
+/\&.extra/sysext/
+directory in the initrd execution environment\&.
+.RE
+.PP
+/\&.extra/tpm2\-pcr\-signature\&.json
+.RS 4
+The TPM2 PCR signature JSON object included in the
+"\&.pcrsig"
+PE section of the unified kernel image is copied into the
+/\&.extra/tpm2\-pcr\-signature\&.json
+file in the initrd execution environment\&.
+.RE
+.PP
+/\&.extra/tpm2\-pcr\-pkey\&.pem
+.RS 4
+The PEM public key included in the
+"\&.pcrpkey"
+PE section of the unified kernel image is copied into the
+/\&.extra/tpm2\-pcr\-public\-key\&.pem
+file in the initrd execution environment\&.
+.RE
+.PP
+Note that all these files are located in the
+"tmpfs"
+file system the kernel sets up for the initrd file hierarchy and are thus lost when the system transitions from the initrd execution environment into the host file system\&. If these resources shall be kept around over this transition they need to be copied to a place that survives the transition first, for example via a suitable
+\fBtmpfiles.d\fR(5)
+line\&. By default, this is done for the TPM2 PCR signature and public key files\&.
+.SH "ASSEMBLING KERNEL IMAGES"
+.PP
+In order to assemble an UEFI PE kernel image from various components as described above, use an
+\fBobjcopy\fR(1)
+command line like this:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+objcopy \e
+    \-\-add\-section \&.osrel=os\-release \-\-change\-section\-vma \&.osrel=0x20000 \e
+    \-\-add\-section \&.cmdline=cmdline\&.txt \-\-change\-section\-vma \&.cmdline=0x30000 \e
+    \-\-add\-section \&.dtb=devicetree\&.dtb \-\-change\-section\-vma \&.dtb=0x40000 \e
+    \-\-add\-section \&.splash=splash\&.bmp \-\-change\-section\-vma \&.splash=0x100000 \e
+    \-\-add\-section \&.linux=vmlinux \-\-change\-section\-vma \&.linux=0x2000000 \e
+    \-\-add\-section \&.initrd=initrd\&.cpio \-\-change\-section\-vma \&.initrd=0x3000000 \e
+    /usr/lib/systemd/boot/efi/linuxx64\&.efi\&.stub \e
+    foo\-unsigned\&.efi
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Note that these PE section offsets are example values and a properly assembled image must not contain any overlapping sections (this includes already existing sections inside the stub before assembly) or boot may fail\&.
+.PP
+This generates one PE executable file
+foo\-unsigned\&.efi
+from the six individual files for OS release information, kernel command line, boot splash image, kernel image, main initrd and UEFI boot stub\&.
+.PP
+To then sign the resulting image for UEFI SecureBoot use an
+\fBsbsign\fR(1)
+command like the following:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+sbsign \e
+    \-\-key mykey\&.pem \e
+    \-\-cert mykey\&.crt \e
+    \-\-output foo\&.efi \e
+    foo\-unsigned\&.efi
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+This expects a pair of X\&.509 private key and certificate as parameters and then signs the UEFI PE executable we generated above for UEFI SecureBoot and generates a signed UEFI PE executable as result\&.
+.PP
+See
+\fBsystemd-measure\fR(1)
+for an example involving the
+"\&.pcrsig"
+and
+"\&.pcrpkey"
+sections\&.
+.SH "SEE ALSO"
+.PP
+\fBsystemd-boot\fR(7),
+\fBsystemd.exec\fR(5),
+\fBsystemd-creds\fR(1),
+\fBsystemd-sysext\fR(8),
+\m[blue]\fBBoot Loader Specification\fR\m[]\&\s-2\u[2]\d\s+2,
+\m[blue]\fBBoot Loader Interface\fR\m[]\&\s-2\u[1]\d\s+2,
+\fBobjcopy\fR(1),
+\fBsbsign\fR(1),
+\fBsystemd-measure\fR(1)
+.SH "NOTES"
+.IP " 1." 4
+Boot Loader Interface
+.RS 4
+\%https://systemd.io/BOOT_LOADER_INTERFACE
+.RE
+.IP " 2." 4
+Boot Loader Specification
+.RS 4
+\%https://systemd.io/BOOT_LOADER_SPECIFICATION
+.RE

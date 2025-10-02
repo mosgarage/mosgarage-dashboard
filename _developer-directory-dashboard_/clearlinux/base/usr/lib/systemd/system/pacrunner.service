@@ -1,0 +1,9 @@
+[Unit]
+Description=Proxy AutoConfig runner service
+
+[Service]
+ExecStart=/usr/sbin/pacrunner -n
+User=pacrunner
+
+[Install]
+WantedBy=multi-user.target

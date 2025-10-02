@@ -1,0 +1,10 @@
+# [TITLE]: devpkg-dtc
+# [DESCRIPTION]: All content for dtc-dev.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Patrick McCarty <patrick.mccarty@intel.com>
+
+include(devpkg-base)
+
+dtc-dev

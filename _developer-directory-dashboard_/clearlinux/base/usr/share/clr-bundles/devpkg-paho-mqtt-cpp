@@ -1,0 +1,10 @@
+# [TITLE]: devpkg-paho-mqtt-cpp
+# [DESCRIPTION]: All content for paho.mqtt.cpp-dev
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Brett T. Warden <brett.t.warden@intel.com>
+
+include(devpkg-base)
+
+paho.mqtt.cpp-dev

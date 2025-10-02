@@ -1,0 +1,20 @@
+# [TITLE]: kernel-preempt-rt
+# [DESCRIPTION]: Run a kernel with PREEMPT_RT support.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools, Kernel
+# [MAINTAINER]: Bernal Marin, Miguel <miguel.bernal.marin@linux.intel.com>
+#
+include(bootloader)
+include(libglib)
+include(linux-firmware)
+include(linux-firmware-extras)
+
+console-autostart
+irqbalance
+mcelog
+
+# kernel package
+linux-preempt-rt
+include(libnl)
+include(numactl)

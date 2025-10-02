@@ -1,0 +1,37 @@
+# [TITLE]: python-data-science
+# [DESCRIPTION]: The Python data-science stack; the best of http://pydata.org.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Programming Languages, Data Science, Developer Tools, Python
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+include(c-basic)
+include(cloud-api)
+include(python-extras)
+
+
+
+# Key pydata.org components
+pypi-bokeh
+pypi-dask
+pypi-ipython
+pypi-matplotlib
+pypi-numpy
+scipy
+sympy
+pandas
+pypi-scikit_image
+pypi-scikit_learn
+
+#
+# Add from https://medium.com/activewizards-machine-learning-company/top-15-python-libraries-for-data-science-in-in-2017-ab61b4f9b4a7
+#
+
+pypi-seaborn
+
+# misc tools to support the above
+pypi-asv
+pypi-plotly
+
+
+# IDE
+#also-add(spyder-ide)

@@ -1,0 +1,10 @@
+# [TITLE]: devpkg-Judy
+# [DESCRIPTION]: All content for Judy-dev
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+include(devpkg-base)
+
+Judy-dev

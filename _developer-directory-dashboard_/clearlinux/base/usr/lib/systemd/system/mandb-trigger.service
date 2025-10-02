@@ -1,0 +1,9 @@
+[Unit]
+Description=Rebuild Manpages database
+Documentation=man:mandb(8)
+BindsTo=update-triggers.target
+ConditionPathExists=/usr/bin/mandb
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mandb -q

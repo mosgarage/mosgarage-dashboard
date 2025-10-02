@@ -1,0 +1,21 @@
+# [TITLE]: devpkg-gi-docgen
+# [DESCRIPTION]: All content for pkgconfig file gi-docgen.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+
+gi-docgen-dev
+include(python3-basic)
+include(libXpm-lib)
+include(gdk-pixbuf)
+include(libX11client)
+include(lib-opengl)
+include(qt-core)
+include(qt-basic)
+include(harfbuzz-lib)
+include(icu4c-lib)
+include(lib-imageformat)
+include(openldap)

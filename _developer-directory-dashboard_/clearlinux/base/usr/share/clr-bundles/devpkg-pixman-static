@@ -1,0 +1,10 @@
+# [TITLE]: devpkg-pixman-static
+# [DESCRIPTION]: Static development files for pixman
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Thiago Macieira <thiago.macieira@intel.com>
+
+include(devpkg-pixman)
+
+pixman-staticdev

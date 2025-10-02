@@ -1,0 +1,11 @@
+[Unit]
+Description=Rebuild graphviz dot configuration
+Documentation=man:dot(1)
+BindsTo=update-triggers.target
+ConditionPathExists=/usr/bin/dot
+Requires=tmpfiles-trigger.service
+After=tmpfiles-trigger.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/dot -c

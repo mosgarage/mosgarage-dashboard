@@ -1,0 +1,98 @@
+access	stat
+apt-cache	swupd search
+apt-get	swupd
+aptitude	swupd
+apt	swupd
+arch	uname -m
+chdir	cd
+chkconfig	systemctl
+compress	zip
+disable	cupsdisable
+dpkg	swupd
+dselect	swupd search
+dump	cpio
+esdcat	pacat
+esdctl	pactl
+esddsp	pulseaudio
+esdmon	pamon
+esdplay	paplay
+esd	pulseaudio
+esdrec	parec
+esdsample	parec
+fdformat	mkfs.ext2
+format	mkfs.ext2
+ftp	lftp
+gpm	xmodmap
+grub	clr-boot-manager
+ifconfig	ip
+ifdown	ip
+ifup	ip
+imapd	dovcot
+inetd	systemd socket activation
+ipchains	iptables
+ipfwadm	iptables
+ispell	aspell
+killall5	killall
+klogd	journalctl
+lilo	extlinux
+lprintd	cancel
+lprint	lpr
+lprintq	lpq
+mailq	msmtp
+mailstats	msmtp
+mailto	msmtp
+mkraid	mdadm
+mlabel	fatlabel, ntfslabel, e2label or swaplabel
+mmount	mount -t msdos <path to device> <mount location>
+most	less to view text files or xxd <binary file> | less for binary files
+mountd	mount -t nfs <path to nfs location> <mount location>
+mpartition	mkfs.msdos
+mpg321	mpg123
+mshowfat	fsck.fat
+mtools	dosfstools, available as a bundle, which includes mkfs.fat, fsck.fat and fatlabel
+mtoolstest	dosfstools, available as a bundle, which includes mkfs.fat, fsck.fat and fatlabel
+mtype	cat
+named	dnsmasq
+nameif	ip
+nc	ncat, or socat
+nfsd	rpc.nfsd
+open	xdg-open
+pacman	swupd
+portmap	rpcbind
+printcap	lpstat
+raidstart	mdadm
+ram	modprobe brd
+rar	zip, or tar
+rcp	scp, or rsync
+rdate	systemd-timesyncd
+rdistd	rsync
+rdist	rsync
+readcd	dd or mount
+restore	cpio
+rexecd	ssh
+rexec	ssh
+richtext	LibreOffice
+rlogin	ssh
+rndc	pdns
+routed	networkctl
+rshd	sshd
+rsh	ssh
+rup	ssh
+ruptime	ssh
+rusersd	who
+rusers	who
+rwall	wall
+rwho	who
+scanadf	GUI-based scan applications from the SW store
+service	systemctl
+setfdprm	fd
+skill	killall, pkill, or pgrep
+slocate	locate
+snice	killall, pkill, or pgrep
+symlink	ln -s
+tailf	tail -f
+tcpd	systemd socket activation
+unrar	zip or tar
+update-ca-certificates	clrtrust
+xinetd	systemd socket activation
+yum	dnf

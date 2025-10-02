@@ -1,0 +1,24 @@
+# [TITLE]: os-testsuite-graphics
+# [DESCRIPTION]: Provides minimal functionality for graphics testing functions.
+# [STATUS]: Active
+# [CAPABILITIES]: Graphics Benchmarking testing, UI interaction testing, and various file utilities
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Wu Chia Chuan <chia.chuan.wu@intel.com>
+include(glmark2)
+
+clear-font
+include(gdk-pixbuf)
+glib
+gnome-session
+libXcursor-lib
+mutter
+shared-mime-info
+xf86-input-libinput
+xkbcomp
+xkeyboard-config
+xorg-server
+xwdrun
+include(gdk-pixbuf)
+include(audio-pipewire)
+include(libpsl-lib)
+include(x11-server)

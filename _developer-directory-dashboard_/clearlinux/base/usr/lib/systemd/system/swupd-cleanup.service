@@ -1,0 +1,6 @@
+[Unit]
+Description=Clean up swupd state directory
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/swupd clean

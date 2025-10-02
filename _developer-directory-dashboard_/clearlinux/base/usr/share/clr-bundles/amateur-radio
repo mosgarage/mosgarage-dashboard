@@ -1,0 +1,47 @@
+# [TITLE]: amateur-radio
+# [DESCRIPTION]: Applications to support ham or amateur radio operations.
+# [STATUS]: Active
+# [CAPABILITIES]: rig control, satellite tracking, packet radio
+# [TAGS]: Other
+# [MAINTAINER]: Brett T. Warden <brett.t.warden@intel.com>
+
+include(desktop-gnomelibs)
+include(file)
+include(libstdcpp)
+include(libX11client)
+include(python3-basic)
+include(qt-basic)
+
+# Optional OpenBLAS support for xnec2c
+also-add(openblas)
+
+chirp
+codec2
+direwolf
+fldigi
+fllog
+flmsg
+flnet
+flrig
+freedv
+gpredict
+grig
+hamlib
+js8call
+librtlsdr
+minimodem
+multimon-ng
+qsstv
+soundmodem
+svxlink
+wsjtx
+xastir
+xlog
+xnec2c
+include(libevent-lib)
+include(pcre-lib)
+include(libXpm-lib)
+include(pypi-requests)
+include(pypi-six)
+include(python-graphics)
+include(pypi-numpy)

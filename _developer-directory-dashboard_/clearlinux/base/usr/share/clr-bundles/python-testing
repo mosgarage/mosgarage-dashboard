@@ -1,0 +1,38 @@
+# [TITLE]: python-testing
+# [DESCRIPTION]: Improve user experience with a common set of prebuilt Python libraries for testing.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Programming Languages, Developer Tools, Python
+# [MAINTAINER]: Athenas Jimenez <athenas.jimenez.gonzalez@intel.com>
+include(cloud-api)
+include(python3-basic)
+include(Sphinx)
+
+#
+# For the test suites
+#
+glibc-bin
+
+#
+linecache2
+pypi-py
+pypi-pytest
+pypi-pytest_asyncio
+pypi-pytest_cov
+pypi-pytest_forked
+pypi-pytest_localserver
+pypi-pytest_randomly
+pypi-pytest_repeat
+pypi-pytest_rerunfailures
+pypi-pytest_runner
+pypi-pytest_sugar
+pypi-pytest_tap
+pypi-pytest_timeout
+pypi-pytest_xdist
+pypi-mock
+
+
+#
+# Helpers for tests
+#
+pypi-beautifulsoup4

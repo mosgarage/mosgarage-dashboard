@@ -1,0 +1,21 @@
+# [TITLE]: domotica
+# [DESCRIPTION]: Home Automation software collection.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Other
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+include(cloud-api)
+include(python3-basic)
+include(libglib)
+include(qt-basic)
+
+pypi-astral
+pypi-hammock
+pypi-gmqtt
+pypi-ouimeaux
+pyecobee
+python-openzwave
+qtmqtt
+pypi-spyrk
+include(pypi-requests)
+include(pypi-cython)

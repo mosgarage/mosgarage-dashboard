@@ -1,0 +1,11 @@
+# [TITLE]: network-monitor-node
+# [DESCRIPTION]: Run network security monitoring node.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Security, Networking
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+hyperscan
+include(suricata)
+include(openldap)
+include(pypi-six)

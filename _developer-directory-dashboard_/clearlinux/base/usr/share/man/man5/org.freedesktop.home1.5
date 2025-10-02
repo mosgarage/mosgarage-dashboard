@@ -1,0 +1,506 @@
+'\" t
+.TH "ORG\&.FREEDESKTOP\&.HOME1" "5" "" "systemd 252" "org.freedesktop.home1"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+org.freedesktop.home1 \- The D\-Bus interface of systemd\-homed
+.SH "INTRODUCTION"
+.PP
+\fBsystemd-homed.service\fR(8)
+is a system service which may be used to create, remove, change or inspect home areas\&. This page describes the D\-Bus interface\&.
+.SH "THE MANAGER OBJECT"
+.PP
+The service exposes the following interfaces on the Manager object on the bus:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+node /org/freedesktop/home1 {
+  interface org\&.freedesktop\&.home1\&.Manager {
+    methods:
+      GetHomeByName(in  s user_name,
+                    out u uid,
+                    out s home_state,
+                    out u gid,
+                    out s real_name,
+                    out s home_directory,
+                    out s shell,
+                    out o bus_path);
+      GetHomeByUID(in  u uid,
+                   out s user_name,
+                   out s home_state,
+                   out u gid,
+                   out s real_name,
+                   out s home_directory,
+                   out s shell,
+                   out o bus_path);
+      GetUserRecordByName(in  s user_name,
+                          out s user_record,
+                          out b incomplete,
+                          out o bus_path);
+      GetUserRecordByUID(in  u uid,
+                         out s user_record,
+                         out b incomplete,
+                         out o bus_path);
+      ListHomes(out a(susussso) home_areas);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      ActivateHome(in  s user_name,
+                   in  s secret);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      DeactivateHome(in  s user_name);
+      RegisterHome(in  s user_record);
+      UnregisterHome(in  s user_name);
+      CreateHome(in  s user_record);
+      RealizeHome(in  s user_name,
+                  in  s secret);
+      RemoveHome(in  s user_name);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      FixateHome(in  s user_name,
+                 in  s secret);
+      AuthenticateHome(in  s user_name,
+                       in  s secret);
+      UpdateHome(in  s user_record);
+      ResizeHome(in  s user_name,
+                 in  t size,
+                 in  s secret);
+      ChangePasswordHome(in  s user_name,
+                         in  s new_secret,
+                         in  s old_secret);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      LockHome(in  s user_name);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      UnlockHome(in  s user_name,
+                 in  s secret);
+      AcquireHome(in  s user_name,
+                  in  s secret,
+                  in  b please_suspend,
+                  out h send_fd);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      RefHome(in  s user_name,
+              in  b please_suspend,
+              out h send_fd);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      ReleaseHome(in  s user_name);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      LockAllHomes();
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      DeactivateAllHomes();
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Rebalance();
+    properties:
+      readonly a(sso) AutoLogin = [\&.\&.\&.];
+  };
+  interface org\&.freedesktop\&.DBus\&.Peer { \&.\&.\&. };
+  interface org\&.freedesktop\&.DBus\&.Introspectable { \&.\&.\&. };
+  interface org\&.freedesktop\&.DBus\&.Properties { \&.\&.\&. };
+};
+    
+.fi
+.if n \{\
+.RE
+.\}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.SS "Methods"
+.PP
+\fBGetHomeByName()\fR
+returns basic user information (a minimal subset of the full user record), provided a user name\&. The information supplied more or less matches what
+\fBgetpwnam\fR(3)
+returns: the numeric UID and GID, the real name, home directory and shell\&. In addition it returns a state identifier describing the state the user\*(Aqs home directory is in, as well as a bus path referring to the bus object encapsulating the user record and home directory\&. This object implements the
+org\&.freedesktop\&.home1\&.Home
+interface documented below\&.
+.PP
+\fBGetHomeByUID()\fR
+is similar to
+\fBGetHomeByName()\fR
+but acquires the information based on the numeric UID of the user\&.
+.PP
+\fBGetUserRecordByName()\fR
+is also similar to
+\fBGetHomeByName()\fR
+but returns the full JSON user record data instead of the broken down records\&. An additional returned boolean indicates whether the record is complete or not\&. A record is considered complete when its
+"privileged"
+section is included, and incomplete if it was removed (see
+\m[blue]\fBJSON User Records\fR\m[]\&\s-2\u[1]\d\s+2
+for details about the various sections of a user record)\&. Generally, only privileged clients and clients running under the identity of the user itself get access to the
+"privileged"
+section and will thus see complete records\&.
+.PP
+\fBGetUserRecordByUID()\fR
+is similar to
+\fBGetUserRecordByName()\fR
+but returns the user record matching the specified numeric UID\&.
+.PP
+\fBListHomes()\fR
+returns an array of all locally managed users\&. The array contains the same fields
+\fBGetHomeByName()\fR
+returns: user name, numeric UID, state, numeric GID, real name, home directory, shell and bus path of the matching bus object\&.
+.PP
+\fBActivateHome()\fR
+activates (i\&.e\&. mounts) the home directory of the specified user\&. The second argument shall contain a user record consisting only of a
+"secret"
+section (all other sections should be stripped, see
+\m[blue]\fBJSON User Records\fR\m[]\&\s-2\u[1]\d\s+2
+for details), and should contain only the secret credentials necessary for unlocking the home directory\&. Typically a client would invoke this function first with an entirely empty record (which is possibly sufficient if single\-factor authentication with a plugged\-in security token is configured), and would then retry with a record populated with more information, depending on the returned error code, in case more credentials are necessary\&. This function is synchronous and returns only after the home directory was fully activated (or the operation failed), which might take some time\&. Clients must be prepared for that, and typically should extend the D\-Bus method call timeout accordingly\&. This method is equivalent to the
+\fBActivate()\fR
+method on the
+org\&.freedesktop\&.home1\&.Home
+interface documented below, but may be called on the manager object and takes a user name as additional argument, instead\&.
+.PP
+\fBDeactivateHome()\fR
+deactivates (i\&.e\&. unmounts) the home directory of the specified user\&. It is equivalent to the
+\fBDeactivate()\fR
+method on the
+org\&.freedesktop\&.home1\&.Home
+interface documented below\&.
+.PP
+\fBRegisterHome()\fR
+registers a new home directory locally\&. It receives the JSON user record as only argument (which typically excludes the
+"secret"
+section)\&. Registering a home directory just makes the user record known to the system, it does not create a home directory or such (which is expected to exist already, or created later)\&. This operation is useful to register home directories locally that are not located where
+systemd\-homed\&.service
+would find them automatically\&.
+.PP
+\fBUnregisterHome()\fR
+unregisters an existing home directory\&. It takes a user name as argument and undoes what
+\fBRegisterHome()\fR
+does\&. It does not attempt to remove the home directory itself, it just unregisters it with the local system\&. Note that if the home directory is placed where
+systemd\-homed\&.service
+looks for home directories anyway this call will only undo fixation (see below), but the record will remain known to
+systemd\-homed\&.service
+and be listed among known records\&. Since the user record is embedded into the home directory this operation generally does not discard data belonging to the user or their record\&. This method is equivalent to
+\fBUnregister()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBCreateHome()\fR
+registers and creates a new home directory\&. This takes a fully specified JSON user record as argument (including the
+"secret"
+section)\&. This registers the user record locally and creates a home directory matching it, depending on the settings specified in the record in combination with local configuration\&.
+.PP
+\fBRealizeHome()\fR
+creates a home directory whose user record is already registered locally\&. This takes a user name plus a user record consisting only of the
+"secret"
+section\&. Invoking
+\fBRegisterHome()\fR
+followed by
+\fBRealizeHome()\fR
+is mostly equivalent to calling
+\fBCreateHome()\fR, except that the latter combines the two in atomic fashion\&. This method is equivalent to
+\fBRealize()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBRemoveHome()\fR
+unregisters a user record locally, and removes the home directory belonging to it, if it is accessible\&. It takes a user name as argument\&. This method is equivalent to
+\fBRemove()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBFixateHome()\fR
+"fixates"
+an automatically discovered home directory\&.
+systemd\-homed\&.service
+automatically discovers home directories dropped in our plugged in and adds them to the runtime list of user records it manages\&. A user record discovered that way may be
+"fixated", in which case it is copied out of the home directory, onto persistent storage, to fixate the UID/GID assignment of the record, and extract additional (typically previously encrypted) user record data from the home directory\&. A home directory mus be fixated before it can be logged into\&. This method call takes a user name and a JSON user record consisting only of the
+"secret"
+section as argument\&. This method is equivalent to
+\fBFixate()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBAuthenticateHome()\fR
+checks passwords or other authentication credentials associated with the home directory\&. It takes a user name and a JSON user record consisting only of the
+"secret"
+section as argument\&. Note that many of the other method calls authenticate the user first, in order to execute some other operation\&. This method call only authenticates and executes no further operation\&. Like
+\fBActivateHome()\fR
+it is usually first invoked with an empty JSON user record, which is then populated for subsequent tries with additional authentication data supplied\&. This method is equivalent to
+\fBAuthenticate()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBUpdateHome()\fR
+updates a locally registered user record\&. Takes a fully specified JSON user record as argument (including the
+"secret"
+section)\&. A user with a matching name and realm must be registered locally already, and the last change timestamp of the newly supplied record must be newer than the previously existing user record\&. Note this operation updates the user record only, it does not propagate passwords/authentication tokens from the user record to the storage back\-end, or resizes the storage back\-end\&. Typically a home directory is first updated, and then the password of the underlying storage updated using
+\fBChangePasswordHome()\fR
+as well as the storage resized using
+\fBResizeHome()\fR\&. This method is equivalent to
+\fBUpdate()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBResizeHome()\fR
+resizes the storage associated with a user record\&. Takes a user name, a disk size in bytes and a user record consisting only of the
+"secret"
+section as argument\&. If the size is specified as
+\fBUINT64_MAX\fR
+the storage is resized to the size already specified in the user record\&. Typically, if the user record is updated using
+\fBUpdateHome()\fR
+above this is used to propagate the size configured there\-in down to the underlying storage back\-end\&. This method is equivalent to
+\fBResize()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBChangePasswordHome()\fR
+changes the passwords/authentication tokens of a home directory\&. Takes a user name, and two JSON user record objects, each consisting only of the
+"secret"
+section, for the old and for the new passwords/authentication tokens\&. If the user record with the new passwords/authentication token data is specified as empty the existing user record\*(Aqs settings are propagated down to the home directory storage\&. This is typically used after a user record is updated using
+\fBUpdateHome()\fR
+in order to propagate the secrets/authentication tokens down to the storage\&. This method is equivalent to
+\fBChangePassword()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBLockHome()\fR
+temporarily suspends access to a home directory, flushing out any cryptographic keys from memory\&. This is only supported on some back\-ends, and usually done during system suspend, in order to effectively secure home directories while the system is sleeping\&. Takes a user name as single argument\&. If an application attempts to access a home directory while it is locked it will typically freeze until the home directory is unlocked again\&. This method is equivalent to
+\fBLock()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBUnlockHome()\fR
+undoes the effect of
+\fBLockHome()\fR\&. Takes a user name and a user record consisting only of the
+"secret"
+section as arguments\&. This method is equivalent to
+\fBUnlock()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBAcquireHome()\fR
+activates or unlocks a home directory in a reference counted mode of operation\&. Takes a user name and user record consisting only of
+"secret"
+section as argument\&. If the home directory is not active yet, it is activated\&. If it is currently locked it is unlocked\&. After completion a reference to the activation/unlocking of the home directory is returned via a file descriptor\&. When the last client which acquired such a file descriptor closes it the home directory is automatically deactivated again\&. This method is typically invoked when a user logs in, and the file descriptor is held until the user logs out again, thus ensuring the user\*(Aqs home directory can be unmounted automatically again in a robust fashion, when the user logs out\&. The third argument is a boolean which indicates whether the client invoking the call is able to automatically re\-authenticate when the system comes back from suspending\&. It should be set by all clients that implement a secure lock screen running outside of the user\*(Aqs context, that is brought up when the system comes back from suspend and can be used to re\-acquire the credentials to unlock the user\*(Aqs home directory\&. If a home directory has at least one client with an open reference to the home directory that does not support this it is not suspended automatically at system suspend, otherwise it is\&. This method is equivalent to
+\fBAcquire()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBRefHome()\fR
+is similar to
+\fBAcquireHome()\fR
+but takes no user record with
+"secret"
+section, i\&.e\&. will take an additional reference to an already activated/unlocked home directory without attempting to activate/unlock it itself\&. It will fail if the home directory is not already activated\&. This method is equivalent to
+\fBRef()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBReleaseHome()\fR
+releases a home directory again, if all file descriptors referencing it are already closed, that where acquired through
+\fBAcquireHome()\fR
+or
+\fBRefHome()\fR\&. Note that this call does not actually cause the deactivation of the home directory (which happens automatically when the last referencing file descriptor is closed), but is simply a synchronization mechanism that allows delaying of the user session\*(Aqs termination until any triggered deactivation is completed\&. This method is equivalent to
+\fBRelease()\fR
+on the
+org\&.freedesktop\&.home1\&.Home
+interface\&.
+.PP
+\fBLockAllHomes()\fR
+locks all active home directories that only have references that opted into automatic suspending during system suspend\&. This is usually invoked automatically shortly before system suspend\&.
+.PP
+\fBDeactivateAllHomes()\fR
+deactivates all home areas that are currently active\&. This is usually invoked automatically shortly before system shutdown\&.
+.PP
+\fBRebalance()\fR
+synchronously rebalances free disk space between home areas\&. This only executes an operation if at least one home area using the LUKS2 backend is active and has rebalancing enabled, and is otherwise a NOP\&.
+.SS "Properties"
+.PP
+\fIAutoLogin\fR
+exposes an array of structures consisting of user name, seat name and object path of an home directory object\&. All locally managed users that have the
+"autoLogin"
+field set are listed here, with the seat name they are associated with\&. A display manager may watch this property and pre\-fill the login screen with the users exposed this way\&.
+.SH "THE HOME OBJECT"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+node /org/freedesktop/home1/home {
+  interface org\&.freedesktop\&.home1\&.Home {
+    methods:
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Activate(in  s secret);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Deactivate();
+      Unregister();
+      Realize(in  s secret);
+      Remove();
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Fixate(in  s secret);
+      Authenticate(in  s secret);
+      Update(in  s user_record);
+      Resize(in  t size,
+             in  s secret);
+      ChangePassword(in  s new_secret,
+                     in  s old_secret);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Lock();
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Unlock(in  s secret);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Acquire(in  s secret,
+              in  b please_suspend,
+              out h send_fd);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Ref(in  b please_suspend,
+          out h send_fd);
+      @org\&.freedesktop\&.systemd1\&.Privileged("true")
+      Release();
+    properties:
+      @org\&.freedesktop\&.DBus\&.Property\&.EmitsChangedSignal("const")
+      readonly s UserName = \*(Aq\&.\&.\&.\*(Aq;
+      readonly u UID = \&.\&.\&.;
+      readonly (suusss) UnixRecord = \&.\&.\&.;
+      @org\&.freedesktop\&.DBus\&.Property\&.EmitsChangedSignal("false")
+      readonly s State = \*(Aq\&.\&.\&.\*(Aq;
+      @org\&.freedesktop\&.DBus\&.Property\&.EmitsChangedSignal("invalidates")
+      readonly (sb) UserRecord = \&.\&.\&.;
+  };
+  interface org\&.freedesktop\&.DBus\&.Peer { \&.\&.\&. };
+  interface org\&.freedesktop\&.DBus\&.Introspectable { \&.\&.\&. };
+  interface org\&.freedesktop\&.DBus\&.Properties { \&.\&.\&. };
+  interface org\&.freedesktop\&.DBus\&.ObjectManager { \&.\&.\&. };
+};
+    
+.fi
+.if n \{\
+.RE
+.\}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.SS "Methods"
+.PP
+\fBActivate()\fR,
+\fBDeactivate()\fR,
+\fBUnregister()\fR,
+\fBRealize()\fR,
+\fBRemove()\fR,
+\fBFixate()\fR,
+\fBAuthenticate()\fR,
+\fBUpdate()\fR,
+\fBResize()\fR,
+\fBChangePassword()\fR,
+\fBLock()\fR,
+\fBUnlock()\fR,
+\fBAcquire()\fR,
+\fBRef()\fR,
+\fBRelease()\fR
+operate like their matching counterparts on the
+org\&.freedesktop\&.home1\&.Manager
+interface (see above)\&. The main difference is that they are methods of the home directory objects, and hence carry no additional user name parameter\&. Which of the two flavors of methods to call depends on the handles to the user known on the client side: if only the user name is known, it\*(Aqs preferable to use the methods on the manager object since they operate with user names only\&. If however the home object path was already acquired some way it is preferable to operate on the
+org\&.freedesktop\&.home1\&.Home
+objects instead\&.
+.SS "Properties"
+.PP
+\fIUserName\fR
+contains the user name of the user account/home directory\&.
+.PP
+\fIUID\fR
+contains the numeric UNIX UID of the user account\&.
+.PP
+\fIUnixRecord\fR
+contains a structure encapsulating the six fields a
+struct passwd
+typically contains (the password field is suppressed)\&.
+.PP
+\fIState\fR
+exposes the current state home the home directory\&.
+.PP
+\fIUserRecord\fR
+contains the full JSON user record string of the user account\&.
+.SH "VERSIONING"
+.PP
+These D\-Bus interfaces follow
+\m[blue]\fBthe usual interface versioning guidelines\fR\m[]\&\s-2\u[2]\d\s+2\&.
+.SH "SEE ALSO"
+.PP
+\fBsystemd\fR(1),
+\fBsystemd-homed.service\fR(8),
+\fBhomectl\fR(1)
+.SH "NOTES"
+.IP " 1." 4
+JSON User Records
+.RS 4
+\%https://systemd.io/USER_RECORD
+.RE
+.IP " 2." 4
+the usual interface versioning guidelines
+.RS 4
+\%https://0pointer.de/blog/projects/versioning-dbus.html
+.RE

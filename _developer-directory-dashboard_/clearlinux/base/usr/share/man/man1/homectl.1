@@ -1,0 +1,1209 @@
+'\" t
+.TH "HOMECTL" "1" "" "systemd 252" "homectl"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+homectl \- Create, remove, change or inspect home directories
+.SH "SYNOPSIS"
+.HP \w'\fBhomectl\fR\ 'u
+\fBhomectl\fR [OPTIONS...] {COMMAND} [NAME...]
+.SH "DESCRIPTION"
+.PP
+\fBhomectl\fR
+may be used to create, remove, change or inspect a user\*(Aqs home directory\&. It\*(Aqs primarily a command interfacing with
+\fBsystemd-homed.service\fR(8)
+which manages home directories of users\&.
+.PP
+Home directories managed by
+systemd\-homed\&.service
+are self\-contained, and thus include the user\*(Aqs full metadata record in the home\*(Aqs data storage itself, making them easy to migrate between machines\&. In particular, a home directory describes a matching user record, and every user record managed by
+systemd\-homed\&.service
+also implies existence and encapsulation of a home directory\&. The user account and home directory become the same concept\&.
+.PP
+The following backing storage mechanisms are supported:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+An individual LUKS2 encrypted loopback file for a user, stored in
+/home/*\&.home\&. At login the file system contained in this files is mounted, after the LUKS2 encrypted volume has been attached\&. The user\*(Aqs password is identical to the encryption passphrase of the LUKS2 volume\&. Access to data without preceding user authentication is thus not possible, even for the system administrator\&. This storage mechanism provides the strongest data security and is thus recommended\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Similar, but the LUKS2 encrypted file system is located on regular block device, such as an USB storage stick\&. In this mode home directories and all data they include are nicely migratable between machines, simply by plugging the USB stick into different systems at different times\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+An encrypted directory using
+"fscrypt"
+on file systems that support it (at the moment this is primarily
+"ext4"), located in
+/home/*\&.homedir\&. This mechanism also provides encryption, but substantially weaker than LUKS2, as most file system metadata is unprotected\&. Moreover it currently does not support changing user passwords once the home directory has been created\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A
+"btrfs"
+subvolume for each user, also located in
+/home/*\&.homedir\&. This provides no encryption, but good quota support\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A regular directory for each user, also located in
+/home/*\&.homedir\&. This provides no encryption, but is a suitable fallback available on all machines, even where LUKS2,
+"fscrypt"
+or
+"btrfs"
+support is not available\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+An individual Windows file share (CIFS) for each user\&.
+.RE
+.PP
+Note that
+systemd\-homed\&.service
+and
+\fBhomectl\fR
+will not manage "classic" UNIX user accounts as created with
+\fBuseradd\fR(8)
+or similar tools\&. In particular, this functionality is not suitable for managing system users (i\&.e\&. users with a UID below 1000) but is exclusive to regular ("human") users\&.
+.PP
+Note that users/home directories managed via
+\fBsystemd\-homed\&.service\fR
+do not show up in
+/etc/passwd
+and similar files, they are synthesized via glibc NSS during runtime\&. They are thus resolvable and may be enumerated via the
+\fBgetent\fR(1)
+tool\&.
+.PP
+This tool interfaces directly with
+systemd\-homed\&.service, and may execute specific commands on the home directories it manages\&. Since every home directory managed that way also defines a JSON user and group record these home directories may also be inspected and enumerated via
+\fBuserdbctl\fR(1)\&.
+.PP
+Home directories managed by
+systemd\-homed\&.service
+are usually in one of two states, or in a transition state between them: when
+"active"
+they are unlocked and mounted, and thus accessible to the system and its programs; when
+"inactive"
+they are not mounted and thus not accessible\&. Activation happens automatically at login of the user and usually can only complete after a password (or other authentication token) has been supplied\&. Deactivation happens after the user fully logged out\&. A home directory remains active as long as the user is logged in at least once, i\&.e\&. has at least one login session\&. When the user logs in a second time simultaneously the home directory remains active\&. It is deactivated only after the last of the user\*(Aqs sessions ends\&.
+.SH "OPTIONS"
+.PP
+The following general options are understood (further options that control the various properties of user records managed by
+systemd\-homed\&.service
+are documented further down):
+.PP
+\fB\-\-identity=\fR\fIFILE\fR
+.RS 4
+Read the user\*(Aqs JSON record from the specified file\&. If passed as
+"\-"
+read the user record from standard input\&. The supplied JSON object must follow the structure documented in
+\m[blue]\fBJSON User Records\fR\m[]\&\s-2\u[1]\d\s+2\&. This option may be used in conjunction with the
+\fBcreate\fR
+and
+\fBupdate\fR
+commands (see below), where it allows configuring the user record in JSON as\-is, instead of setting the individual user record properties (see below)\&.
+.RE
+.PP
+\fB\-\-json=\fR\fIFORMAT\fR, \fB\-j\fR
+.RS 4
+Controls whether to output the user record in JSON format, if the
+\fBinspect\fR
+command (see below) is used\&. Takes one of
+"pretty",
+"short"
+or
+"off"\&. If
+"pretty"
+human\-friendly whitespace and newlines are inserted in the output to make the JSON data more readable\&. If
+"short"
+all superfluous whitespace is suppressed\&. If
+"off"
+(the default) the user information is not shown in JSON format but in a friendly human readable formatting instead\&. The
+\fB\-j\fR
+option picks
+"pretty"
+when run interactively and
+"short"
+otherwise\&.
+.RE
+.PP
+\fB\-\-export\-format=\fR\fIFORMAT\fR, \fB\-E\fR, \fB\-EE\fR
+.RS 4
+When used with the
+\fBinspect\fR
+verb in JSON mode (see above) may be used to suppress certain aspects of the JSON user record on output\&. Specifically, if
+"stripped"
+format is used the binding and runtime fields of the record are removed\&. If
+"minimal"
+format is used the cryptographic signature is removed too\&. If
+"full"
+format is used the full JSON record is shown (this is the default)\&. This option is useful for copying an existing user record to a different system in order to create a similar user there with the same settings\&. Specifically:
+\fBhomectl inspect \-EE | ssh root@othersystem homectl create \-i\-\fR
+may be used as simple command line for replicating a user on another host\&.
+\fB\-E\fR
+is equivalent to
+\fB\-j \-\-export\-format=stripped\fR,
+\fB\-EE\fR
+to
+\fB\-j \-\-export\-format=minimal\fR\&. Note that when replicating user accounts user records acquired in
+"stripped"
+mode will retain the original cryptographic signatures and thus may only be modified when the private key to update them is available on the destination machine\&. When replicating users in
+"minimal"
+mode, the signature is removed during the replication and thus the record will be implicitly signed with the key of the destination machine and may be updated there without any private key replication\&.
+.RE
+.PP
+\fB\-H\fR, \fB\-\-host=\fR
+.RS 4
+Execute the operation remotely\&. Specify a hostname, or a username and hostname separated by
+"@", to connect to\&. The hostname may optionally be suffixed by a port ssh is listening on, separated by
+":", and then a container name, separated by
+"/", which connects directly to a specific container on the specified host\&. This will use SSH to talk to the remote machine manager instance\&. Container names may be enumerated with
+\fBmachinectl \-H \fR\fB\fIHOST\fR\fR\&. Put IPv6 addresses in brackets\&.
+.RE
+.PP
+\fB\-M\fR, \fB\-\-machine=\fR
+.RS 4
+Execute operation on a local container\&. Specify a container name to connect to, optionally prefixed by a user name to connect as and a separating
+"@"
+character\&. If the special string
+"\&.host"
+is used in place of the container name, a connection to the local system is made (which is useful to connect to a specific user\*(Aqs user bus:
+"\-\-user \-\-machine=lennart@\&.host")\&. If the
+"@"
+syntax is not used, the connection is made as root user\&. If the
+"@"
+syntax is used either the left hand side or the right hand side may be omitted (but not both) in which case the local user name and
+"\&.host"
+are implied\&.
+.RE
+.PP
+\fB\-\-no\-pager\fR
+.RS 4
+Do not pipe output into a pager\&.
+.RE
+.PP
+\fB\-\-no\-legend\fR
+.RS 4
+Do not print the legend, i\&.e\&. column headers and the footer with hints\&.
+.RE
+.PP
+\fB\-\-no\-ask\-password\fR
+.RS 4
+Do not query the user for authentication for privileged operations\&.
+.RE
+.PP
+\fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Print a short help text and exit\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Print a short version string and exit\&.
+.RE
+.SH "USER RECORD PROPERTIES"
+.PP
+The following options control various properties of the user records/home directories that
+systemd\-homed\&.service
+manages\&. These switches may be used in conjunction with the
+\fBcreate\fR
+and
+\fBupdate\fR
+commands for configuring various aspects of the home directory and the user account:
+.PP
+\fB\-\-real\-name=\fR\fINAME\fR, \fB\-c\fR \fINAME\fR
+.RS 4
+The real name for the user\&. This corresponds with the GECOS field on classic UNIX NSS records\&.
+.RE
+.PP
+\fB\-\-realm=\fR\fIREALM\fR
+.RS 4
+The realm for the user\&. The realm associates a user with a specific organization or installation, and allows distinguishing users of the same name defined in different contexts\&. The realm can be any string that also qualifies as valid DNS domain name, and it is recommended to use the organization\*(Aqs or installation\*(Aqs domain name for this purpose, but this is not enforced nor required\&. On each system only a single user of the same name may exist, and if a user with the same name and realm is seen it is assumed to refer to the same user while a user with the same name but different realm is considered a different user\&. Note that this means that two users sharing the same name but with distinct realms are not allowed on the same system\&. Assigning a realm to a user is optional\&.
+.RE
+.PP
+\fB\-\-email\-address=\fR\fIEMAIL\fR
+.RS 4
+Takes an electronic mail address to associate with the user\&. On log\-in the
+\fI$EMAIL\fR
+environment variable is initialized from this value\&.
+.RE
+.PP
+\fB\-\-location=\fR\fITEXT\fR
+.RS 4
+Takes location specification for this user\&. This is free\-form text, which might or might not be usable by geo\-location applications\&. Example:
+\fB\-\-location="Berlin, Germany"\fR
+or
+\fB\-\-location="Basement, Room 3a"\fR
+.RE
+.PP
+\fB\-\-icon\-name=\fR\fIICON\fR
+.RS 4
+Takes an icon name to associate with the user, following the scheme defined by the
+\m[blue]\fBIcon Naming Specification\fR\m[]\&\s-2\u[2]\d\s+2\&.
+.RE
+.PP
+\fB\-\-home\-dir=\fR\fIPATH\fR, \fB\-d\fR\fIPATH\fR
+.RS 4
+Takes a path to use as home directory for the user\&. Note that this is the directory the user\*(Aqs home directory is mounted to while the user is logged in\&. This is not where the user\*(Aqs data is actually stored, see
+\fB\-\-image\-path=\fR
+for that\&. If not specified defaults to
+/home/$USER\&.
+.RE
+.PP
+\fB\-\-uid=\fR\fIUID\fR
+.RS 4
+Takes a preferred numeric UNIX UID to assign this user\&. If a user is to be created with the specified UID and it is already taken by a different user on the local system then creation of the home directory is refused\&. Note though, if after creating the home directory it is used on a different system and the configured UID is taken by another user there, then
+\fBsystemd\-homed\fR
+may assign the user a different UID on that system\&. The specified UID must be outside of the system user range\&. It is recommended to use the 60001\&...60513 UID range for this purpose\&. If not specified, the UID is automatically picked\&. If the home directory is found to be owned by a different UID when logging in, the home directory and everything underneath it will have its ownership changed automatically before login completes\&.
+.sp
+Note that users managed by
+\fBsystemd\-homed\fR
+always have a matching group associated with the same name as well as a GID matching the UID of the user\&. Thus, configuring the GID separately is not permitted\&.
+.RE
+.PP
+\fB\-\-member\-of=\fR\fIGROUP\fR, \fB\-G\fR \fIGROUP\fR
+.RS 4
+Takes a comma\-separated list of auxiliary UNIX groups this user shall belong to\&. Example:
+\fB\-\-member\-of=wheel\fR
+to provide the user with administrator privileges\&. Note that
+\fBsystemd\-homed\fR
+does not manage any groups besides a group matching the user in name and numeric UID/GID\&. Thus any groups listed here must be registered independently, for example with
+\fBgroupadd\fR(8)\&. Any non\-existent groups are ignored\&. This option may be used more than once, in which case all specified group lists are combined\&. If the user is currently a member of a group which is not listed, the user will be removed from the group\&.
+.RE
+.PP
+\fB\-\-skel=\fR\fIPATH\fR
+.RS 4
+Takes a file system path to a directory\&. Specifies the skeleton directory to initialize the home directory with\&. All files and directories in the specified path are copied into any newly create home directory\&. If not specified defaults to
+/etc/skel/\&.
+.RE
+.PP
+\fB\-\-shell=\fR\fISHELL\fR
+.RS 4
+Takes a file system path\&. Specifies the shell binary to execute on terminal logins\&. If not specified defaults to
+/bin/bash\&.
+.RE
+.PP
+\fB\-\-setenv=\fR\fIVARIABLE\fR[=\fIVALUE\fR]
+.RS 4
+Takes an environment variable assignment to set for all user processes\&. May be used multiple times to set multiple environment variables\&. When
+"="
+and
+\fIVALUE\fR
+are omitted, the value of the variable with the same name in the program environment will be used\&.
+.sp
+Note that a number of other settings also result in environment variables to be set for the user, including
+\fB\-\-email=\fR,
+\fB\-\-timezone=\fR
+and
+\fB\-\-language=\fR\&.
+.RE
+.PP
+\fB\-\-timezone=\fR\fITIMEZONE\fR
+.RS 4
+Takes a time zone location name that sets the timezone for the specified user\&. When the user logs in the
+\fI$TZ\fR
+environment variable is initialized from this setting\&. Example:
+\fB\-\-timezone=Europe/Amsterdam\fR
+will result in the environment variable
+"TZ=:Europe/Amsterdam"\&. (":"
+is used intentionally as part of the timezone specification, see
+\fBtzset\fR(3)\&.)
+.RE
+.PP
+\fB\-\-language=\fR\fILANG\fR
+.RS 4
+Takes a specifier indicating the preferred language of the user\&. The
+\fI$LANG\fR
+environment variable is initialized from this value on login, and thus a value suitable for this environment variable is accepted here, for example
+\fB\-\-language=de_DE\&.UTF8\fR\&.
+.RE
+.PP
+\fB\-\-ssh\-authorized\-keys=\fR\fIKEYS\fR
+.RS 4
+Either takes a SSH authorized key line to associate with the user record or a
+"@"
+character followed by a path to a file to read one or more such lines from\&. SSH keys configured this way are made available to SSH to permit access to this home directory and user record\&. This option may be used more than once to configure multiple SSH keys\&.
+.RE
+.PP
+\fB\-\-pkcs11\-token\-uri=\fR\fIURI\fR
+.RS 4
+Takes an RFC 7512 PKCS#11 URI referencing a security token (e\&.g\&. YubiKey or PIV smartcard) that shall be able to unlock the user account\&. The security token URI should reference a security token with exactly one pair of X\&.509 certificate and private key\&. A random secret key is then generated, encrypted with the public key of the X\&.509 certificate, and stored as part of the user record\&. At login time it is decrypted with the PKCS#11 module and then used to unlock the account and associated resources\&. See below for an example how to set up authentication with a security token\&.
+.sp
+Instead of a valid PKCS#11 URI, the special strings
+"list"
+and
+"auto"
+may be specified\&. If
+"list"
+is passed, a brief table of suitable, currently plugged in PKCS#11 hardware tokens is shown, along with their URIs\&. If
+"auto"
+is passed, a suitable PKCS#11 hardware token is automatically selected (this operation will fail if there isn\*(Aqt exactly one suitable token discovered)\&. The latter is a useful shortcut for the most common case where a single PKCS#11 hardware token is plugged in\&.
+.sp
+Note that many hardware security tokens implement both PKCS#11/PIV and FIDO2 with the
+"hmac\-secret"
+extension (for example: the YubiKey 5 series), as supported with the
+\fB\-\-fido2\-device=\fR
+option below\&. Both mechanisms are similarly powerful, though FIDO2 is the more modern technology\&. PKCS#11/PIV tokens have the benefit of being recognizable before authentication and hence can be used for implying the user identity to use for logging in, which FIDO2 does not allow\&. PKCS#11/PIV devices generally require initialization (i\&.e\&. storing a private/public key pair on them, see example below) before they can be used; FIDO2 security tokens generally do not required that, and work out of the box\&.
+.RE
+.PP
+\fB\-\-fido2\-credential\-algorithm=\fR\fISTRING\fR
+.RS 4
+Specify COSE algorithm used in credential generation\&. The default value is
+"es256"\&. Supported values are
+"es256",
+"rs256"
+and
+"eddsa"\&.
+.sp
+"es256"
+denotes ECDSA over NIST P\-256 with SHA\-256\&.
+"rs256"
+denotes 2048\-bit RSA with PKCS#1\&.5 padding and SHA\-256\&.
+"eddsa"
+denotes EDDSA over Curve25519 with SHA\-512\&.
+.sp
+Note that your authenticator may not support some algorithms\&.
+.RE
+.PP
+\fB\-\-fido2\-device=\fR\fIPATH\fR
+.RS 4
+Takes a path to a Linux
+"hidraw"
+device (e\&.g\&.
+/dev/hidraw1), referring to a FIDO2 security token implementing the
+"hmac\-secret"
+extension that shall be able to unlock the user account\&. A random salt value is generated on the host and passed to the FIDO2 device, which calculates a HMAC hash of the salt using an internal secret key\&. The result is then used as the key to unlock the user account\&. The random salt is included in the user record, so that whenever authentication is needed it can be passed to the FIDO2 token again\&.
+.sp
+Instead of a valid path to a FIDO2
+"hidraw"
+device the special strings
+"list"
+and
+"auto"
+may be specified\&. If
+"list"
+is passed, a brief table of suitable discovered FIDO2 devices is shown\&. If
+"auto"
+is passed, a suitable FIDO2 token is automatically selected, if exactly one is discovered\&. The latter is a useful shortcut for the most common case where a single FIDO2 hardware token is plugged in\&.
+.sp
+Note that FIDO2 devices suitable for this option must implement the
+"hmac\-secret"
+extension\&. Most current devices (such as the YubiKey 5 series) do\&. If the extension is not implemented the device cannot be used for unlocking home directories\&.
+.sp
+The FIDO2 device may be subsequently removed by setting the device path to an empty string (e\&.g\&.
+\fBhomectl update $USER \-\-fido2\-device=""\fR)\&.
+.sp
+Note that many hardware security tokens implement both FIDO2 and PKCS#11/PIV (and thus may be used with either
+\fB\-\-fido2\-device=\fR
+or
+\fB\-\-pkcs11\-token\-uri=\fR), for a discussion see above\&.
+.RE
+.PP
+\fB\-\-fido2\-with\-client\-pin=\fR\fIBOOL\fR
+.RS 4
+When enrolling a FIDO2 security token, controls whether to require the user to enter a PIN when unlocking the account (the FIDO2
+"clientPin"
+feature)\&. Defaults to
+"yes"\&. (Note: this setting is without effect if the security token does not support the
+"clientPin"
+feature at all, or does not allow enabling or disabling it\&.)
+.RE
+.PP
+\fB\-\-fido2\-with\-user\-presence=\fR\fIBOOL\fR
+.RS 4
+When enrolling a FIDO2 security token, controls whether to require the user to verify presence (tap the token, the FIDO2
+"up"
+feature) when unlocking the account\&. Defaults to
+"yes"\&. (Note: this setting is without effect if the security token does not support the
+"up"
+feature at all, or does not allow enabling or disabling it\&.)
+.RE
+.PP
+\fB\-\-fido2\-with\-user\-verification=\fR\fIBOOL\fR
+.RS 4
+When enrolling a FIDO2 security token, controls whether to require user verification when unlocking the account (the FIDO2
+"uv"
+feature)\&. Defaults to
+"no"\&. (Note: this setting is without effect if the security token does not support the
+"uv"
+feature at all, or does not allow enabling or disabling it\&.)
+.RE
+.PP
+\fB\-\-recovery\-key=\fR\fIBOOL\fR
+.RS 4
+Accepts a boolean argument\&. If enabled a recovery key is configured for the account\&. A recovery key is a computer generated access key that may be used to regain access to an account if the password has been forgotten or the authentication token lost\&. The key is generated and shown on screen, and should be printed or otherwise transferred to a secure location\&. A recovery key may be entered instead of a regular password to unlock the account\&.
+.RE
+.PP
+\fB\-\-locked=\fR\fIBOOLEAN\fR
+.RS 4
+Takes a boolean argument\&. Specifies whether this user account shall be locked\&. If true logins into this account are prohibited, if false (the default) they are permitted (of course, only if authorization otherwise succeeds)\&.
+.RE
+.PP
+\fB\-\-not\-before=\fR\fITIMESTAMP\fR, \fB\-\-not\-after=\fR\fITIMESTAMP\fR
+.RS 4
+These options take a timestamp string, in the format documented in
+\fBsystemd.time\fR(7)
+and configures points in time before and after logins into this account are not permitted\&.
+.RE
+.PP
+\fB\-\-rate\-limit\-interval=\fR\fISECS\fR, \fB\-\-rate\-limit\-burst=\fR\fINUMBER\fR
+.RS 4
+Configures a rate limit on authentication attempts for this user\&. If the user attempts to authenticate more often than the specified number, on a specific system, within the specified time interval authentication is refused until the time interval passes\&. Defaults to 10 times per 1min\&.
+.RE
+.PP
+\fB\-\-password\-hint=\fR\fITEXT\fR
+.RS 4
+Takes a password hint to store alongside the user record\&. This string is stored accessible only to privileged users and the user itself and may not be queried by other users\&. Example:
+\fB\-\-password\-hint="My first pet\*(Aqs name"\fR\&.
+.RE
+.PP
+\fB\-\-enforce\-password\-policy=\fR\fIBOOL\fR, \fB\-P\fR
+.RS 4
+Takes a boolean argument\&. Configures whether to enforce the system\*(Aqs password policy for this user, regarding quality and strength of selected passwords\&. Defaults to on\&.
+\fB\-P\fR
+is short for
+\fB\-\-\-enforce\-password\-policy=no\fR\&.
+.RE
+.PP
+\fB\-\-password\-change\-now=\fR\fIBOOL\fR
+.RS 4
+Takes a boolean argument\&. If true the user is asked to change their password on next login\&.
+.RE
+.PP
+\fB\-\-password\-change\-min=\fR\fITIME\fR, \fB\-\-password\-change\-max=\fR\fITIME\fR, \fB\-\-password\-change\-warn=\fR\fITIME\fR, \fB\-\-password\-change\-inactive=\fR\fITIME\fR
+.RS 4
+Each of these options takes a time span specification as argument (in the syntax documented in
+\fBsystemd.time\fR(7)) and configures various aspects of the user\*(Aqs password expiration policy\&. Specifically,
+\fB\-\-password\-change\-min=\fR
+configures how much time has to pass after changing the password of the user until the password may be changed again\&. If the user tries to change their password before this time passes the attempt is refused\&.
+\fB\-\-password\-change\-max=\fR
+configures how soon after it has been changed the password expires and needs to be changed again\&. After this time passes logging in may only proceed after the password is changed\&.
+\fB\-\-password\-change\-warn=\fR
+specifies how much earlier than then the time configured with
+\fB\-\-password\-change\-max=\fR
+the user is warned at login to change their password as it will expire soon\&. Finally
+\fB\-\-password\-change\-inactive=\fR
+configures the time which has to pass after the password as expired until the user is not permitted to log in or change the password anymore\&. Note that these options only apply to password authentication, and do not apply to other forms of authentication, for example PKCS#11\-based security token authentication\&.
+.RE
+.PP
+\fB\-\-disk\-size=\fR\fIBYTES\fR
+.RS 4
+Either takes a size in bytes as argument (possibly using the usual K, M, G, \&... suffixes for 1024 base values), a percentage value, or the special strings
+"min"
+or
+"max", and configures the disk space to assign to the user\&. If a percentage value is specified (i\&.e\&. the argument suffixed with
+"%") it is taken relative to the available disk space of the backing file system\&. If specified as
+"min"
+assigns the minimal disk space permitted by the constraints of the backing file system and other limits, when specified as
+"max"
+assigns the maximum disk space available\&. If the LUKS2 backend is used this configures the size of the loopback file and file system contained therein\&. For the other storage backends configures disk quota using the filesystem\*(Aqs native quota logic, if available\&. If not specified, defaults to 85% of the available disk space for the LUKS2 backend and to no quota for the others\&.
+.RE
+.PP
+\fB\-\-access\-mode=\fR\fIMODE\fR
+.RS 4
+Takes a UNIX file access mode written in octal\&. Configures the access mode of the home directory itself\&. Note that this is only used when the directory is first created, and the user may change this any time afterwards\&. Example:
+\fB\-\-access\-mode=0700\fR
+.RE
+.PP
+\fB\-\-umask=\fR\fIMASK\fR
+.RS 4
+Takes the access mode mask (in octal syntax) to apply to newly created files and directories of the user ("umask")\&. If set this controls the initial umask set for all login sessions of the user, possibly overriding the system\*(Aqs defaults\&.
+.RE
+.PP
+\fB\-\-nice=\fR\fINICE\fR
+.RS 4
+Takes the numeric scheduling priority ("nice level") to apply to the processes of the user at login time\&. Takes a numeric value in the range \-20 (highest priority) to 19 (lowest priority)\&.
+.RE
+.PP
+\fB\-\-rlimit=\fR\fILIMIT\fR=\fIVALUE\fR[:\fIVALUE\fR]
+.RS 4
+Allows configuration of resource limits for processes of this user, see
+\fBgetrlimit\fR(2)
+for details\&. Takes a resource limit name (e\&.g\&.
+"LIMIT_NOFILE") followed by an equal sign, followed by a numeric limit\&. Optionally, separated by colon a second numeric limit may be specified\&. If two are specified this refers to the soft and hard limits, respectively\&. If only one limit is specified the setting sets both limits in one\&.
+.RE
+.PP
+\fB\-\-tasks\-max=\fR\fITASKS\fR
+.RS 4
+Takes a non\-zero unsigned integer as argument\&. Configures the maximum number of tasks (i\&.e\&. threads, where each process is at least one thread) the user may have at any given time\&. This limit applies to all tasks forked off the user\*(Aqs sessions, even if they change user identity via
+\fBsu\fR(1)
+or a similar tool\&. Use
+\fB\-\-rlimit=LIMIT_NPROC=\fR
+to place a limit on the tasks actually running under the UID of the user, thus excluding any child processes that might have changed user identity\&. This controls the
+\fITasksMax=\fR
+setting of the per\-user systemd slice unit
+user\-$UID\&.slice\&. See
+\fBsystemd.resource-control\fR(5)
+for further details\&.
+.RE
+.PP
+\fB\-\-memory\-high=\fR\fIBYTES\fR, \fB\-\-memory\-max=\fR\fIBYTES\fR
+.RS 4
+Set a limit on the memory a user may take up on a system at any given time in bytes (the usual K, M, G, \&... suffixes are supported, to the base of 1024)\&. This includes all memory used by the user itself and all processes they forked off that changed user credentials\&. This controls the
+\fIMemoryHigh=\fR
+and
+\fIMemoryMax=\fR
+settings of the per\-user systemd slice unit
+user\-$UID\&.slice\&. See
+\fBsystemd.resource-control\fR(5)
+for further details\&.
+.RE
+.PP
+\fB\-\-cpu\-weight=\fR\fIWEIGHT\fR, \fB\-\-io\-weight=\fR\fIWEIGHT\fR
+.RS 4
+Set CPU and IO scheduling weights of the processes of the user, including those of processes forked off by the user that changed user credentials\&. Takes a numeric value in the range 1\&...10000\&. This controls the
+\fICPUWeight=\fR
+and
+\fIIOWeight=\fR
+settings of the per\-user systemd slice unit
+user\-$UID\&.slice\&. See
+\fBsystemd.resource-control\fR(5)
+for further details\&.
+.RE
+.PP
+\fB\-\-storage=\fR\fISTORAGE\fR
+.RS 4
+Selects the storage mechanism to use for this home directory\&. Takes one of
+"luks",
+"fscrypt",
+"directory",
+"subvolume",
+"cifs"\&. For details about these mechanisms, see above\&. If a new home directory is created and the storage type is not specifically specified,
+\fBhomed.conf\fR(5)
+defines which default storage to use\&.
+.RE
+.PP
+\fB\-\-image\-path=\fR\fIPATH\fR
+.RS 4
+Takes a file system path\&. Configures where to place the user\*(Aqs home directory\&. When LUKS2 storage is used refers to the path to the loopback file, otherwise to the path to the home directory (which may be in
+/home/
+or any other accessible filesystem)\&. When unspecified defaults to
+/home/$USER\&.home
+when LUKS storage is used and
+/home/$USER\&.homedir
+for the other storage mechanisms\&. Not defined for the
+"cifs"
+storage mechanism\&. To use LUKS2 storage on a regular block device (for example a USB stick) pass the path to the block device here\&. Specifying the path to a directory here when using LUKS2 storage is not allowed\&. Similar, specifying the path to a regular file or device node is not allowed if any of the other storage backends are used\&.
+.RE
+.PP
+\fB\-\-drop\-caches=\fR\fIBOOL\fR
+.RS 4
+Automatically flush OS file system caches on logout\&. This is useful in combination with the fscrypt storage backend to ensure the OS does not keep decrypted versions of the files and directories in memory (and accessible) after logout\&. This option is also supported on other backends, but should not bring any benefit there\&. Defaults to off, except if the selected storage backend is fscrypt, where it defaults to on\&. Note that flushing OS caches will negatively influence performance of the OS shortly after logout\&.
+.RE
+.PP
+\fB\-\-fs\-type=\fR\fITYPE\fR
+.RS 4
+When LUKS2 storage is used configures the file system type to use inside the home directory LUKS2 container\&. One of
+"btrfs",
+"ext4",
+"xfs"\&. If not specified
+\fBhomed.conf\fR(5)
+defines which default file system type to use\&. Note that
+"xfs"
+is not recommended as its support for file system resizing is too limited\&.
+.RE
+.PP
+\fB\-\-luks\-discard=\fR\fIBOOL\fR
+.RS 4
+When LUKS2 storage is used configures whether to enable the
+"discard"
+feature of the file system\&. If enabled the file system on top of the LUKS2 volume will report empty block information to LUKS2 and the loopback file below, ensuring that empty space in the home directory is returned to the backing file system below the LUKS2 volume, resulting in a "sparse" loopback file\&. This option mostly defaults to off, since this permits over\-committing home directories which results in I/O errors if the underlying file system runs full while the upper file system wants to allocate a block\&. Such I/O errors are generally not handled well by file systems nor applications\&. When LUKS2 storage is used on top of regular block devices (instead of on top a loopback file) the discard logic defaults to on\&.
+.RE
+.PP
+\fB\-\-luks\-offline\-discard=\fR\fIBOOL\fR
+.RS 4
+Similar to
+\fB\-\-luks\-discard=\fR, controls the trimming of the file system\&. However, while
+\fB\-\-luks\-discard=\fR
+controls what happens when the home directory is active,
+\fB\-\-luks\-offline\-discard=\fR
+controls what happens when it becomes inactive, i\&.e\&. whether to trim/allocate the storage when deactivating the home directory\&. This option defaults to on, to ensure disk space is minimized while a user is not logged in\&.
+.RE
+.PP
+\fB\-\-luks\-extra\-mount\-options=\fR\fIOPTIONS\fR
+.RS 4
+Takes a string containing additional mount options to use when mounting the LUKS volume\&. If specified, this string will be appended to the default, built\-in mount options\&.
+.RE
+.PP
+\fB\-\-luks\-cipher=\fR\fICIPHER\fR, \fB\-\-luks\-cipher\-mode=\fR\fIMODE\fR, \fB\-\-luks\-volume\-key\-size=\fR\fIBYTES\fR, \fB\-\-luks\-pbkdf\-type=\fR\fITYPE\fR, \fB\-\-luks\-pbkdf\-hash\-algorithm=\fR\fIALGORITHM\fR, \fB\-\-luks\-pbkdf\-time\-cost=\fR\fISECONDS\fR, \fB\-\-luks\-pbkdf\-memory\-cost=\fR\fIBYTES\fR, \fB\-\-luks\-pbkdf\-parallel\-threads=\fR\fITHREADS\fR, \fB\-\-luks\-sector\-size=\fR\fIBYTES\fR
+.RS 4
+Configures various cryptographic parameters for the LUKS2 storage mechanism\&. See
+\fBcryptsetup\fR(8)
+for details on the specific attributes\&.
+.sp
+Note that
+\fBhomectl\fR
+uses bytes for key size, like
+/proc/crypto, but
+\fBcryptsetup\fR(8)
+uses bits\&.
+.RE
+.PP
+\fB\-\-auto\-resize\-mode=\fR
+.RS 4
+Configures whether to automatically grow and/or shrink the backing file system on login and logout\&. Takes one of the strings
+"off",
+"grow",
+"shrink\-and\-grow"\&. Only applies to the LUKS2 backend currently, and if the btrfs file system is used inside it (since only then online growing/shrinking of the file system is supported)\&. Defaults to
+"shrink\-and\-grow", if LUKS2/btrfs is used, otherwise is off\&. If set to
+"off"
+no automatic shrinking/growing during login or logout is done\&. If set to
+"grow"
+the home area is grown to the size configured via
+\fB\-\-disk\-size=\fR
+should it currently be smaller\&. If it already matches the configured size or is larger no operation is executed\&. If set to
+"shrink\-and\-grow"
+the home area is also resized during logout to the minimal size the used disk space and file system constraints permit\&. This mode thus ensures that while a home area is activated it is sized to the configured size, but while deactivated it is compacted taking up only the minimal space possible\&. Note that if the system is powered off abnormally or if the user otherwise not logged out cleanly the shrinking operation will not take place, and the user has to re\-login/logout again before it is executed again\&.
+.RE
+.PP
+\fB\-\-rebalance\-weight=\fR
+.RS 4
+Configures the weight parameter for the free disk space rebalancing logic\&. Only applies to the LUKS2 backend (since for the LUKS2 backend disk space is allocated from a per\-user loopback file system instead of immediately from a common pool like the other backends do it)\&. In regular intervals free disk space in the active home areas and their backing storage is redistributed among them, taking the weight value configured here into account\&. Expects an integer in the range 1\&...10000, or the special string
+"off"\&. If not specified defaults to 100\&. The weight is used to scale free space made available to the home areas: a home area with a weight of 200 will get twice the free space as one with a weight of 100; a home area with a weight of 50 will get half of that\&. The backing file system will be assigned space for a weight of 20\&. If set to
+"off"
+no automatic free space distribution is done for this home area\&. Note that resizing the home area explicitly (with
+\fBhomectl resize\fR
+see below) will implicitly turn off the automatic rebalancing\&. To reenable the automatic rebalancing use
+\fB\-\-rebalance\-weight=\fR
+with an empty parameter\&.
+.RE
+.PP
+\fB\-\-nosuid=\fR\fIBOOL\fR, \fB\-\-nodev=\fR\fIBOOL\fR, \fB\-\-noexec=\fR\fIBOOL\fR
+.RS 4
+Configures the
+"nosuid",
+"nodev"
+and
+"noexec"
+mount options for the home directories\&. By default
+"nodev"
+and
+"nosuid"
+are on, while
+"noexec"
+is off\&. For details about these mount options see
+\fBmount\fR(8)\&.
+.RE
+.PP
+\fB\-\-cifs\-domain=\fR\fIDOMAIN\fR, \fB\-\-cifs\-user\-name=\fR\fIUSER\fR, \fB\-\-cifs\-service=\fR\fISERVICE\fR, \fB\-\-cifs\-extra\-mount\-options=\fR\fIOPTIONS\fR
+.RS 4
+Configures the Windows File Sharing (CIFS) domain and user to associate with the home directory/user account, as well as the file share ("service") to mount as directory\&. The latter is used when
+"cifs"
+storage is selected\&. The file share should be specified in format
+"//\fIhost\fR/\fIshare\fR/\fIdirectory/\&...\fR"\&. The directory part is optional \(em if not specified the home directory will be placed in the top\-level directory of the share\&. The
+\fB\-\-cifs\-extra\-mount\-options=\fR
+setting allows specifying additional mount options when mounting the share, see
+\fBmount.cifs\fR(8)
+for details\&.
+.RE
+.PP
+\fB\-\-stop\-delay=\fR\fISECS\fR
+.RS 4
+Configures the time the per\-user service manager shall continue to run after the all sessions of the user ended\&. The default is configured in
+\fBlogind.conf\fR(5)
+(for home directories of LUKS2 storage located on removable media this defaults to 0 though)\&. A longer time makes sure quick, repetitive logins are more efficient as the user\*(Aqs service manager doesn\*(Aqt have to be started every time\&.
+.RE
+.PP
+\fB\-\-kill\-processes=\fR\fIBOOL\fR
+.RS 4
+Configures whether to kill all processes of the user on logout\&. The default is configured in
+\fBlogind.conf\fR(5)\&.
+.RE
+.PP
+\fB\-\-auto\-login=\fR\fIBOOL\fR
+.RS 4
+Takes a boolean argument\&. Configures whether the graphical UI of the system should automatically log this user in if possible\&. Defaults to off\&. If less or more than one user is marked this way automatic login is disabled\&.
+.RE
+.SH "COMMANDS"
+.PP
+The following commands are understood:
+.PP
+\fBlist\fR
+.RS 4
+List all home directories (along with brief details) currently managed by
+systemd\-homed\&.service\&. This command is also executed if none is specified on the command line\&. (Note that the list of users shown by this command does not include users managed by other subsystems, such as system users or any traditional users listed in
+/etc/passwd\&.)
+.RE
+.PP
+\fBactivate\fR \fIUSER\fR [\fIUSER\&...\fR]
+.RS 4
+Activate one or more home directories\&. The home directories of each listed user will be activated and made available under their mount points (typically in
+/home/$USER)\&. Note that any home activated this way stays active indefinitely, until it is explicitly deactivated again (with
+\fBdeactivate\fR, see below), or the user logs in and out again and it thus is deactivated due to the automatic deactivation\-on\-logout logic\&.
+.sp
+Activation of a home directory involves various operations that depend on the selected storage mechanism\&. If the LUKS2 mechanism is used, this generally involves: inquiring the user for a password, setting up a loopback device, validating and activating the LUKS2 volume, checking the file system, mounting the file system, and potentially changing the ownership of all included files to the correct UID/GID\&.
+.RE
+.PP
+\fBdeactivate\fR \fIUSER\fR [\fIUSER\&...\fR]
+.RS 4
+Deactivate one or more home directories\&. This undoes the effect of
+\fBactivate\fR\&.
+.RE
+.PP
+\fBinspect\fR \fIUSER\fR [\fIUSER\&...\fR]
+.RS 4
+Show various details about the specified home directories\&. This shows various information about the home directory and its user account, including runtime data such as current state, disk use and similar\&. Combine with
+\fB\-\-json=\fR
+to show the detailed JSON user record instead, possibly combined with
+\fB\-\-export\-format=\fR
+to suppress certain aspects of the output\&.
+.RE
+.PP
+\fBauthenticate\fR \fIUSER\fR [\fIUSER\&...\fR]
+.RS 4
+Validate authentication credentials of a home directory\&. This queries the caller for a password (or similar) and checks that it correctly unlocks the home directory\&. This leaves the home directory in the state it is in, i\&.e\&. it leaves the home directory in inactive state if it was inactive before, and in active state if it was active before\&.
+.RE
+.PP
+\fBcreate\fR \fIUSER\fR, \fBcreate\fR \fB\-\-identity=\fR\fIPATH\fR [\fIUSER\fR]
+.RS 4
+Create a new home directory/user account of the specified name\&. Use the various user record property options (as documented above) to control various aspects of the home directory and its user accounts\&.
+.sp
+The specified user name should follow the strict syntax described on
+\m[blue]\fBUser/Group Name Syntax\fR\m[]\&\s-2\u[3]\d\s+2\&.
+.RE
+.PP
+\fBremove\fR \fIUSER\fR
+.RS 4
+Remove a home directory/user account\&. This will remove both the home directory\*(Aqs user record and the home directory itself, and thus delete all files and directories owned by the user\&.
+.RE
+.PP
+\fBupdate\fR \fIUSER\fR, \fBupdate\fR \fB\-\-identity=\fR\fIPATH\fR [\fIUSER\fR]
+.RS 4
+Update a home directory/user account\&. Use the various user record property options (as documented above) to make changes to the account, or alternatively provide a full, updated JSON user record via the
+\fB\-\-identity=\fR
+option\&.
+.sp
+Note that changes to user records not signed by a cryptographic private key available locally are not permitted, unless
+\fB\-\-identity=\fR
+is used with a user record that is already correctly signed by a recognized private key\&.
+.RE
+.PP
+\fBpasswd\fR \fIUSER\fR
+.RS 4
+Change the password of the specified home directory/user account\&.
+.RE
+.PP
+\fBresize\fR \fIUSER\fR \fIBYTES\fR
+.RS 4
+Change the disk space assigned to the specified home directory\&. If the LUKS2 storage mechanism is used this will automatically resize the loopback file and the file system contained within\&. Note that if
+"ext4"
+is used inside of the LUKS2 volume, it is necessary to deactivate the home directory before shrinking it (i\&.e the user has to log out)\&. Growing can be done while the home directory is active\&. If
+"xfs"
+is used inside of the LUKS2 volume the home directory may not be shrunk whatsoever\&. On all three of
+"ext4",
+"xfs"
+and
+"btrfs"
+the home directory may be grown while the user is logged in, and on the latter also shrunk while the user is logged in\&. If the
+"subvolume",
+"directory",
+"fscrypt"
+storage mechanisms are used, resizing will change file system quota\&. The size parameter may make use of the usual suffixes B, K, M, G, T (to the base of 1024)\&. The special strings
+"min"
+and
+"max"
+may be specified in place of a numeric size value, for minimizing or maximizing disk space assigned to the home area, taking constraints of the file system, disk usage inside the home area and on the backing storage into account\&.
+.RE
+.PP
+\fBlock\fR \fIUSER\fR
+.RS 4
+Temporarily suspend access to the user\*(Aqs home directory and remove any associated cryptographic keys from memory\&. Any attempts to access the user\*(Aqs home directory will stall until the home directory is unlocked again (i\&.e\&. re\-authenticated)\&. This functionality is primarily intended to be used during system suspend to make sure the user\*(Aqs data cannot be accessed until the user re\-authenticates on resume\&. This operation is only defined for home directories that use the LUKS2 storage mechanism\&.
+.RE
+.PP
+\fBunlock\fR \fIUSER\fR
+.RS 4
+Resume access to the user\*(Aqs home directory again, undoing the effect of
+\fBlock\fR
+above\&. This requires authentication of the user, as the cryptographic keys required for access to the home directory need to be reacquired\&.
+.RE
+.PP
+\fBlock\-all\fR
+.RS 4
+Execute the
+\fBlock\fR
+command on all suitable home directories at once\&. This operation is generally executed on system suspend (i\&.e\&. by
+\fBsystemctl suspend\fR
+and related commands), to ensure all active user\*(Aqs cryptographic keys for accessing their home directories are removed from memory\&.
+.RE
+.PP
+\fBdeactivate\-all\fR
+.RS 4
+Execute the
+\fBdeactivate\fR
+command on all active home directories at once\&. This operation is generally executed on system shut down (i\&.e\&. by
+\fBsystemctl poweroff\fR
+and related commands), to ensure all active user\*(Aqs home directories are fully deactivated before
+/home/
+and related file systems are unmounted\&.
+.RE
+.PP
+\fBwith\fR \fIUSER\fR \fICOMMAND\&...\fR
+.RS 4
+Activate the specified user\*(Aqs home directory, run the specified command (under the caller\*(Aqs identity, not the specified user\*(Aqs) and deactivate the home directory afterwards again (unless the user is logged in otherwise)\&. This command is useful for running privileged backup scripts and such, but requires authentication with the user\*(Aqs credentials in order to be able to unlock the user\*(Aqs home directory\&.
+.RE
+.PP
+\fBrebalance\fR
+.RS 4
+Rebalance free disk space between active home areas and the backing storage\&. See
+\fB\-\-rebalance\-weight=\fR
+above\&. This executes no operation unless there\*(Aqs at least one active LUKS2 home area that has disk space rebalancing enabled\&. This operation is synchronous: it will only complete once disk space is rebalanced according to the rebalancing weights\&. Note that rebalancing also takes place automatically in the background in regular intervals\&. Use this command to synchronously ensure disk space is properly redistributed before initiating an operation requiring large amounts of disk space\&.
+.RE
+.SH "EXIT STATUS"
+.PP
+On success, 0 is returned, a non\-zero failure code otherwise\&.
+.PP
+When a command is invoked with
+\fBwith\fR, the exit status of the child is propagated\&. Effectively,
+\fBhomectl\fR
+will exit without error if the command is successfully invoked
+\fIand\fR
+finishes successfully\&.
+.SH "ENVIRONMENT"
+.PP
+\fI$SYSTEMD_LOG_LEVEL\fR
+.RS 4
+The maximum log level of emitted messages (messages with a higher log level, i\&.e\&. less important ones, will be suppressed)\&. Either one of (in order of decreasing importance)
+\fBemerg\fR,
+\fBalert\fR,
+\fBcrit\fR,
+\fBerr\fR,
+\fBwarning\fR,
+\fBnotice\fR,
+\fBinfo\fR,
+\fBdebug\fR, or an integer in the range 0\&...7\&. See
+\fBsyslog\fR(3)
+for more information\&.
+.RE
+.PP
+\fI$SYSTEMD_LOG_COLOR\fR
+.RS 4
+A boolean\&. If true, messages written to the tty will be colored according to priority\&.
+.sp
+This setting is only useful when messages are written directly to the terminal, because
+\fBjournalctl\fR(1)
+and other tools that display logs will color messages based on the log level on their own\&.
+.RE
+.PP
+\fI$SYSTEMD_LOG_TIME\fR
+.RS 4
+A boolean\&. If true, console log messages will be prefixed with a timestamp\&.
+.sp
+This setting is only useful when messages are written directly to the terminal or a file, because
+\fBjournalctl\fR(1)
+and other tools that display logs will attach timestamps based on the entry metadata on their own\&.
+.RE
+.PP
+\fI$SYSTEMD_LOG_LOCATION\fR
+.RS 4
+A boolean\&. If true, messages will be prefixed with a filename and line number in the source code where the message originates\&.
+.sp
+Note that the log location is often attached as metadata to journal entries anyway\&. Including it directly in the message text can nevertheless be convenient when debugging programs\&.
+.RE
+.PP
+\fI$SYSTEMD_LOG_TID\fR
+.RS 4
+A boolean\&. If true, messages will be prefixed with the current numerical thread ID (TID)\&.
+.sp
+Note that the this information is attached as metadata to journal entries anyway\&. Including it directly in the message text can nevertheless be convenient when debugging programs\&.
+.RE
+.PP
+\fI$SYSTEMD_LOG_TARGET\fR
+.RS 4
+The destination for log messages\&. One of
+\fBconsole\fR
+(log to the attached tty),
+\fBconsole\-prefixed\fR
+(log to the attached tty but with prefixes encoding the log level and "facility", see
+\fBsyslog\fR(3),
+\fBkmsg\fR
+(log to the kernel circular log buffer),
+\fBjournal\fR
+(log to the journal),
+\fBjournal\-or\-kmsg\fR
+(log to the journal if available, and to kmsg otherwise),
+\fBauto\fR
+(determine the appropriate log target automatically, the default),
+\fBnull\fR
+(disable log output)\&.
+.RE
+.PP
+\fI$SYSTEMD_PAGER\fR
+.RS 4
+Pager to use when
+\fB\-\-no\-pager\fR
+is not given; overrides
+\fI$PAGER\fR\&. If neither
+\fI$SYSTEMD_PAGER\fR
+nor
+\fI$PAGER\fR
+are set, a set of well\-known pager implementations are tried in turn, including
+\fBless\fR(1)
+and
+\fBmore\fR(1), until one is found\&. If no pager implementation is discovered no pager is invoked\&. Setting this environment variable to an empty string or the value
+"cat"
+is equivalent to passing
+\fB\-\-no\-pager\fR\&.
+.sp
+Note: if
+\fI$SYSTEMD_PAGERSECURE\fR
+is not set,
+\fI$SYSTEMD_PAGER\fR
+(as well as
+\fI$PAGER\fR) will be silently ignored\&.
+.RE
+.PP
+\fI$SYSTEMD_LESS\fR
+.RS 4
+Override the options passed to
+\fBless\fR
+(by default
+"FRSXMK")\&.
+.sp
+Users might want to change two options in particular:
+.PP
+\fBK\fR
+.RS 4
+This option instructs the pager to exit immediately when
+Ctrl+C
+is pressed\&. To allow
+\fBless\fR
+to handle
+Ctrl+C
+itself to switch back to the pager command prompt, unset this option\&.
+.sp
+If the value of
+\fI$SYSTEMD_LESS\fR
+does not include
+"K", and the pager that is invoked is
+\fBless\fR,
+Ctrl+C
+will be ignored by the executable, and needs to be handled by the pager\&.
+.RE
+.PP
+\fBX\fR
+.RS 4
+This option instructs the pager to not send termcap initialization and deinitialization strings to the terminal\&. It is set by default to allow command output to remain visible in the terminal even after the pager exits\&. Nevertheless, this prevents some pager functionality from working, in particular paged output cannot be scrolled with the mouse\&.
+.RE
+.sp
+See
+\fBless\fR(1)
+for more discussion\&.
+.RE
+.PP
+\fI$SYSTEMD_LESSCHARSET\fR
+.RS 4
+Override the charset passed to
+\fBless\fR
+(by default
+"utf\-8", if the invoking terminal is determined to be UTF\-8 compatible)\&.
+.RE
+.PP
+\fI$SYSTEMD_PAGERSECURE\fR
+.RS 4
+Takes a boolean argument\&. When true, the "secure" mode of the pager is enabled; if false, disabled\&. If
+\fI$SYSTEMD_PAGERSECURE\fR
+is not set at all, secure mode is enabled if the effective UID is not the same as the owner of the login session, see
+\fBgeteuid\fR(2)
+and
+\fBsd_pid_get_owner_uid\fR(3)\&. In secure mode,
+\fBLESSSECURE=1\fR
+will be set when invoking the pager, and the pager shall disable commands that open or create new files or start new subprocesses\&. When
+\fI$SYSTEMD_PAGERSECURE\fR
+is not set at all, pagers which are not known to implement secure mode will not be used\&. (Currently only
+\fBless\fR(1)
+implements secure mode\&.)
+.sp
+Note: when commands are invoked with elevated privileges, for example under
+\fBsudo\fR(8)
+or
+\fBpkexec\fR(1), care must be taken to ensure that unintended interactive features are not enabled\&. "Secure" mode for the pager may be enabled automatically as describe above\&. Setting
+\fISYSTEMD_PAGERSECURE=0\fR
+or not removing it from the inherited environment allows the user to invoke arbitrary commands\&. Note that if the
+\fI$SYSTEMD_PAGER\fR
+or
+\fI$PAGER\fR
+variables are to be honoured,
+\fI$SYSTEMD_PAGERSECURE\fR
+must be set too\&. It might be reasonable to completely disable the pager using
+\fB\-\-no\-pager\fR
+instead\&.
+.RE
+.PP
+\fI$SYSTEMD_COLORS\fR
+.RS 4
+Takes a boolean argument\&. When true,
+\fBsystemd\fR
+and related utilities will use colors in their output, otherwise the output will be monochrome\&. Additionally, the variable can take one of the following special values:
+"16",
+"256"
+to restrict the use of colors to the base 16 or 256 ANSI colors, respectively\&. This can be specified to override the automatic decision based on
+\fI$TERM\fR
+and what the console is connected to\&.
+.RE
+.PP
+\fI$SYSTEMD_URLIFY\fR
+.RS 4
+The value must be a boolean\&. Controls whether clickable links should be generated in the output for terminal emulators supporting this\&. This can be specified to override the decision that
+\fBsystemd\fR
+makes based on
+\fI$TERM\fR
+and other conditions\&.
+.RE
+.SH "EXAMPLES"
+.PP
+\fBExample\ \&1.\ \&Create a user "waldo" in the administrator group "wheel", and assign 500 MiB disk space to them\&.\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+homectl create waldo \-\-real\-name="Waldo McWaldo" \-G wheel \-\-disk\-size=500M
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fBExample\ \&2.\ \&Create a user "wally" on a USB stick, and assign a maximum of 500 concurrent tasks to them\&.\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+homectl create wally \-\-real\-name="Wally McWally" \-\-image\-path=/dev/disk/by\-id/usb\-SanDisk_Ultra_Fit_476fff954b2b5c44\-0:0 \-\-tasks\-max=500
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fBExample\ \&3.\ \&Change nice level of user "odlaw" to +5 and make sure the environment variable \fI$SOME\fR is set to the string "THING" for them on login\&.\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+homectl update odlaw \-\-nice=5 \-\-setenv=SOME=THING
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fBExample\ \&4.\ \&Set up authentication with a YubiKey security token using PKCS#11/PIV:\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# Clear the Yubikey from any old keys (careful!)
+ykman piv reset
+
+# Generate a new private/public key pair on the device, store the public key in \*(Aqpubkey\&.pem\*(Aq\&.
+ykman piv generate\-key \-a RSA2048 9d pubkey\&.pem
+
+# Create a self\-signed certificate from this public key, and store it on the device\&.
+ykman piv generate\-certificate \-\-subject "Knobelei" 9d pubkey\&.pem
+
+# We don\*(Aqt need the public key on disk anymore
+rm pubkey\&.pem
+
+# Allow the security token to unlock the account of user \*(Aqlafcadio\*(Aq\&.
+homectl update lafcadio \-\-pkcs11\-token\-uri=auto
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fBExample\ \&5.\ \&Set up authentication with a FIDO2 security token:\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# Allow a FIDO2 security token to unlock the account of user \*(Aqnihilbaxter\*(Aq\&.
+homectl update nihilbaxter \-\-fido2\-device=auto
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+.PP
+\fBsystemd\fR(1),
+\fBsystemd-homed.service\fR(8),
+\fBhomed.conf\fR(5),
+\fBuserdbctl\fR(1),
+\fBuseradd\fR(8),
+\fBcryptsetup\fR(8)
+.SH "NOTES"
+.IP " 1." 4
+JSON User Records
+.RS 4
+\%https://systemd.io/USER_RECORD
+.RE
+.IP " 2." 4
+Icon Naming Specification
+.RS 4
+\%https://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
+.RE
+.IP " 3." 4
+User/Group Name Syntax
+.RS 4
+\%https://systemd.io/USER_NAMES
+.RE

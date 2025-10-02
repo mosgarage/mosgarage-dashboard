@@ -1,0 +1,17 @@
+# [TITLE]: hardware-gpu
+# [DESCRIPTION]: Firmware and tools for GPU support.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+include(libstdcpp)
+include(libglib)
+
+include(lib-opengl)
+
+# gpu firmware
+include(linux-firmware-extras)
+
+# Too ancient LLVM required; not suitable for general use
+
+#intel-graphics-compiler

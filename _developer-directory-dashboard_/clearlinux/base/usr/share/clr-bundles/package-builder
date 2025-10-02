@@ -1,0 +1,36 @@
+# [TITLE]: package-builder
+# [DESCRIPTION]: Minimal bundle for building packages via Clear Linux OS common tooling.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: California Sullivan <california.l.sullivan@intel.com>
+include(curl)
+include(diffutils)
+include(git)
+include(package-utils)
+include(sudo)
+include(Sphinx)
+include(dnf)
+
+# common requirements
+include(cpio)
+diffstat
+include(make)
+include(plzip)
+pypi-six
+include(zstd)
+include(gpgme)
+# autospec requirements
+abireport
+include(binutils)
+pypi-chardet
+include(gnupg)
+pypi-pycurl
+pypi-toml
+pypi-urllib3
+
+# koji command line utility
+koji
+include(pypi-six)
+include(pypi-requests)
+include(openldap)

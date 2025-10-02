@@ -1,0 +1,117 @@
+#!/bin/bash
+
+function systemctl() {
+    # Ensure that systemctl doesn't spawn an askpass in the background
+    /usr/bin/systemctl --no-ask-password "$@"
+}
+
+function help() {
+    echo "update trigger helper"
+    echo "usage: update-helper [options] [PATH]"
+    echo ""
+    echo " PATH: Run update scripts in a chroot located at PATH (does not use systemd)"
+    echo ""
+    echo "options:"
+    echo " --reexec -r: Will run daemon-reexec instead of daemon-reload (only used with systemctl)"
+    echo " --no-block -n: Will run the update hooks in the background"
+    echo " --help -h: display this menu"
+    echo ""
+}
+
+# location of one-shot update scripts
+SCRIPTS_DIR=/usr/lib/swupd/one-shot-updates
+# location of state of one-shot scripts (executed or not)
+SCRIPTS_STATE_DIR=/var/lib/swupd/one-shot-updates
+
+# one-shot update is an executable (normally, a shell script) which attempts to
+# reconfigure the system when a major backward-incompatible update is deployed.
+# the update script attempts to reconfigure the system so that previous behavior
+# is kept thus avoiding major interruptions or unexpected behavior.
+
+# run the scripts located in $SCRIPTS_DIR, if they were not successfully
+# executed previously
+run_one_shot_updates() {
+    local upd_script_state
+    local upd_script_out
+    [ ! -d "${SCRIPTS_DIR}" ] && return
+    mkdir -p "${SCRIPTS_STATE_DIR}"
+    for upd_script in $(find "${SCRIPTS_DIR}" -maxdepth 1 -executable -type f); do
+        upd_script_state="${SCRIPTS_STATE_DIR}/$(basename "${upd_script}").done"
+        [ -f "${upd_script_state}" ] && continue
+        upd_script_out="${SCRIPTS_STATE_DIR}/$(basename "${upd_script}").out"
+        if "${upd_script}" &>"${upd_script_out}"; then
+            mv "${upd_script_out}" "${upd_script_state}"
+            echo "Executed ${upd_script} on $(date)" >> "${upd_script_state}"
+        fi
+    done
+}
+
+# create state for all the scripts that the version being installed contains so
+# that they will not be run in the future.
+# takes a single argument: prefix path.
+mask_one_shot_updates() {
+    local root_scripts_dir="$1/${SCRIPTS_DIR}"
+    local root_scripts_state_dir="$1/${SCRIPTS_STATE_DIR}"
+    [ ! -d "${root_scripts_dir}" ] && return
+    mkdir -p "${root_scripts_state_dir}"
+    for upd_script in $(find "${root_scripts_dir}" -maxdepth 1 -executable -type f); do
+        upd_script_state="${root_scripts_state_dir}/$(basename "${upd_script}").done"
+        [ -f "{upd_script_state}" ] && continue
+        echo "Masked as not needed on $(date)" > "${upd_script_state}"
+    done
+}
+
+update() {
+    local block_flag=
+    local reexec=
+    local prefix="/"
+
+    for var in "$@"; do
+        case "$var" in
+            "--help"|"-h")
+                help
+                exit 0
+                ;;
+            "--no-block"|"-n")
+                block_flag="--no-block"
+                ;;
+            "--reexec"|"-r")
+                reexec=1
+                ;;
+            *)
+                if [ "$prefix" != "/" ]; then
+                    help
+                    exit -1
+                fi
+                prefix="$var"
+                ;;
+        esac
+    done
+
+    # Check if systemd is init and not being run for a chroot update
+    if [ "${prefix}" = "/" ] && /usr/bin/systemctl &>/dev/null; then
+        run_one_shot_updates
+
+        if [ ! -z "${reexec}" ]; then
+            systemctl daemon-reexec
+        else
+            systemctl daemon-reload
+        fi
+
+        # make sure daemons are restarted if needed, first
+        if [ -x /usr/bin/clr-service-restart ]; then
+            /usr/bin/clr-service-restart
+        fi
+
+        systemctl restart update-triggers.target ${block_flag}
+    else # Not using systemd as init, run the trigger scripts
+        mask_one_shot_updates "${prefix}"
+        if [ -z "${block_flag}" ]; then
+            "${prefix}/usr/libexec/updater/update-trigger.sh" "${prefix}"
+        else
+            "${prefix}/usr/libexec/updater/update-trigger.sh" "${prefix}" &
+        fi
+    fi
+}
+
+update "$@"

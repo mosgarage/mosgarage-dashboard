@@ -1,0 +1,10 @@
+[Unit]
+Description=Install prebuilt store if trust management is not installed.
+ConditionFileIsExecutable=/usr/bin/clrtrust
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/clrtrust generate
+
+[Install]
+WantedBy=update-triggers.target

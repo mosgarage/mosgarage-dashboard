@@ -1,0 +1,26 @@
+# [TITLE]: libreoffice
+# [DESCRIPTION]: Free office productivity suite.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Productivity
+# [MAINTAINER]: Brett T. Warden <brett.t.warden@intel.com>
+
+include(libX11client)
+include(curl)
+include(libglib)
+include(gstreamer)
+include(lib-imageformat)
+include(openldap)
+include(libstdcpp)
+
+# start of custom additions (edits outside this area will be removed automatically)
+include(qt-basic)
+include(qt-core)
+include(mpfr-lib)
+include(pcre-lib)
+include(icu4c-lib)
+include(postgresql)
+# end of custom additions
+
+# main package
+libreoffice

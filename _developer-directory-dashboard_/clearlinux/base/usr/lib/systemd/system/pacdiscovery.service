@@ -1,0 +1,13 @@
+[Unit]
+Description=Proxy AutoConfig discovery service
+Requires=systemd-resolved.service
+After=systemd-resolved.service
+
+[Service]
+ExecStart=/usr/sbin/pacdiscovery
+RuntimeDirectory=pacrunner
+SuccessExitStatus=2
+User=pacrunner
+
+[Install]
+WantedBy=multi-user.target

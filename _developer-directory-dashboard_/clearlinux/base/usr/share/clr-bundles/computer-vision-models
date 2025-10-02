@@ -1,0 +1,12 @@
+# [TITLE]: computer-vision-models
+# [DESCRIPTION]: Deep learning models for computer vision.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools, Data Science
+# [MAINTAINER]: Patrick McCarty <patrick.mccarty@intel.com>
+
+include(python3-basic)
+include(lib-imageformat)
+include(libX11client)
+
+

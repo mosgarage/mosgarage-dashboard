@@ -1,0 +1,12 @@
+# [TITLE]: devpkg-notmuch
+# [DESCRIPTION]: Contains the notmuch header file.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Leandro Dorileo <leandro.maciel.dorileo@intel.com>
+
+include(devpkg-base)
+
+notmuch-dev
+include(qt-core)
+include(icu4c-lib)

@@ -1,0 +1,10 @@
+# [TITLE]: devpkg-xz-static
+# [DESCRIPTION]: All content for static building using liblzma.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Thiago Macieira <thiago.macieira@intel.com>
+
+include(devpkg-xz)
+
+xz-staticdev

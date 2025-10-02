@@ -1,0 +1,8 @@
+[Unit]
+Description=Attempt to start systemd-networkd if needed 1 min after boot
+
+[Timer]
+OnStartupSec=60s
+
+[Install]
+WantedBy=timers.target

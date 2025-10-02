@@ -1,0 +1,15 @@
+# [TITLE]: gnome-desktop-testing
+# [DESCRIPTION]: Test runner for GNOME-style installed tests
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Ross Burton <ross.burton@intel.com>
+
+include(libglib)
+
+# start of custom additions (edits outside this area will be removed automatically)
+include(gnome-base-libs)
+# end of custom additions
+
+# main package
+gnome-desktop-testing

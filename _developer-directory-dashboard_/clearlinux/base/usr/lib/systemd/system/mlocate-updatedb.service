@@ -1,0 +1,14 @@
+[Unit]
+Description=Update a database for mlocate
+ConditionPathExists=/var/lib/mlocate
+
+[Service]
+ExecStart=/usr/bin/updatedb
+Nice=19
+IOSchedulingClass=2
+IOSchedulingPriority=7
+PrivateTmp=true
+PrivateDevices=true
+PrivateNetwork=true
+ProtectSystem=true
+UMask=0027

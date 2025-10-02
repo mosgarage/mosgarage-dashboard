@@ -1,0 +1,57 @@
+# [TITLE]: storage-utils
+# [DESCRIPTION]: Run disk and filesystem management functions.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+include(smartmontools)
+include(libglib)
+include(samba)
+
+LVM2
+LVM2-extras
+autofs
+include(btrfs-progs)
+cifs-utils
+cryptsetup-bin
+cryptsetup-config
+cryptsetup-lib
+cryptsetup-locales
+cryptsetup-man
+include(dosfstools)
+e2fsprogs
+e2fsprogs-extras
+exfat-utils
+f2fs-tools
+fsarchiver
+gptfdisk
+ipmctl
+lsscsi
+mdadm
+mmc-utils
+mtools
+multipath-tools
+ndctl
+include(nfs-utils)
+ntfs-3g
+nvme-cli
+open-iscsi
+opensm
+include(parted)
+include(pmdk)
+rdma-core
+rpcbind
+samba-bin
+samba-config
+samba-data
+simg-tools
+include(smartmontools)
+squashfs-tools
+also-add(sshfs)
+tdb-lib
+thin-provisioning-tools
+include(xfsprogs)
+include(lz4)
+include(libnl)
+include(libxml2)
+include(gobject-introspection)

@@ -1,0 +1,12 @@
+# [TITLE]: devpkg-libssh
+# [DESCRIPTION]: All content for pkgconfig file libssh.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+
+libssh-dev
+include(openldap)
+include(libssh-lib)

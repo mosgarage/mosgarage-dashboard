@@ -1,0 +1,8 @@
+[Unit]
+Description=Replace elf files with optimzed versions
+BindsTo=update-triggers.target
+ConditionPathExists=/usr/libexec/clr-elf-replace
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/clr-elf-replace

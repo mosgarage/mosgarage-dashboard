@@ -1,0 +1,40 @@
+# [TITLE]: transcoding-support
+# [DESCRIPTION]: A set of utilities and libraries supporting transcoding
+# [STATUS]: WIP
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+# Audio
+libsndfile
+libvorbis
+include(pulseaudio)
+include(qt-basic)
+speex
+sbc
+openal-soft
+# Middleware/utility
+graphene
+gtk3
+libgudev
+librsvg
+libsoup
+libunwind
+libusb
+include(openblas)
+orc
+pango
+qtbase
+qtdeclarative
+qtwayland
+qtx11extras
+SDL2
+# Video
+Vulkan-Loader
+libtheora
+libvdpau
+libvpx
+libwebp
+rtmpdump
+include(v4l-utils)
+include(libpsl-lib)
+include(libunwind-lib)

@@ -1,0 +1,29 @@
+# [TITLE]: blivet-gui
+# [DESCRIPTION]: A graphical tool for storage configuration using blivet library
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: Karthik Prabhu Vinod <karthik.prabhu.vinod@intel.com>
+
+# start of custom additions (edits outside this area will be removed automatically)
+include(curl)
+include(qt-core)
+include(mpfr-lib)
+include(gobject-introspection)
+include(gmp-lib)
+include(pypi-six)
+pypi-blivet
+include(parted)
+pyparted
+pypi-pid
+pypi-ped
+libblockdev
+also-add(storage-utils)
+include(libstdcpp)
+include(python3-basic)
+include(lib-opengl)
+include(libglib)
+# end of custom additions
+
+# main package
+blivet-gui

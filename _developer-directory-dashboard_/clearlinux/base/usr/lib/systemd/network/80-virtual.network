@@ -1,0 +1,10 @@
+[Match]
+Name=eth*
+Virtualization=vm
+
+[Network]
+DHCP=yes
+
+[DHCP]
+UseDomains=yes
+UseMTU=yes

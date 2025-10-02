@@ -1,0 +1,9 @@
+# [TITLE]: linux-firmware-wifi
+# [DESCRIPTION]: Wifi adapter firmware.
+# [STATUS]: WIP
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools, Networking
+# [MAINTAINER]: Brett T. Warden <brett.t.warden@intel.com>
+include(linux-firmware)
+
+linux-firmware-wifi

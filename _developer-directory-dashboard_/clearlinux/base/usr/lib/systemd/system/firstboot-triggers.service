@@ -1,0 +1,9 @@
+[Unit]
+Description=Update triggers on first boot
+ConditionFirstBoot=|yes
+ConditionPathExists=|!/var/cache/ldconfig/ld.so.cache
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/systemctl start --no-block update-triggers.target

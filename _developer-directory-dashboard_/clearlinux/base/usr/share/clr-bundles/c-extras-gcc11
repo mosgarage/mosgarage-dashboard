@@ -1,0 +1,11 @@
+# [TITLE]: c-extras-gcc11
+# [DESCRIPTION]: Build and run C/C++ language programs using the GCC 11.x compiler
+# [STATUS]: Active
+# [CAPABILITIES]: Build and run C language programs
+# [TAGS]: Programming Languages
+# [MAINTAINER]: Patrick McCarty <patrick.mccarty@intel.com>
+
+include(c-basic)
+
+gcc11
+gcc11-dev

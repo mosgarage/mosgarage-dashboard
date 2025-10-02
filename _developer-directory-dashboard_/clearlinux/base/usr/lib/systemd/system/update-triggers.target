@@ -1,0 +1,13 @@
+[Unit]
+Description=Post system update triggers
+Wants=ldconfig-trigger.service
+Wants=mandb-trigger.service
+Wants=catalog-trigger.service
+Wants=tmpfiles-trigger.service
+Wants=graphviz-dot-trigger.service
+Wants=locale-archive-trigger.service
+Wants=systemd-modules-trigger.service
+Wants=motd-trigger.service
+Wants=p11-kit-trigger.service
+Wants=hwdb-update-trigger.service
+Wants=clr-elf-replace-trigger.service

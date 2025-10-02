@@ -1,0 +1,9 @@
+[Unit]
+Description=Create glib schemas compiled cache file
+BindsTo=update-triggers.target
+ConditionPathExists=/usr/libexec/glib-compile-schemas
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/glib-compile-schemas --targetdir=/var/cache/glib-2.0/schemas /usr/share/glib-2.0/schemas
+

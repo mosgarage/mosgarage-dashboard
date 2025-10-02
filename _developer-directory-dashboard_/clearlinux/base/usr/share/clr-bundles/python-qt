@@ -1,0 +1,16 @@
+# [TITLE]: python-qt
+# [DESCRIPTION]: Run python programs that use the Qt runtime.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Programming Languages
+# [MAINTAINER]: Kevron Rees <kevron.m.rees@intel.com>
+include(qt-basic)
+include(lib-qt5webengine)
+
+pyotherside
+include(openblas)
+include(pypi-numpy)
+include(pypi-six)
+include(pypi-requests)
+include(pypi-cython)
+include(pandas)

@@ -1,0 +1,16 @@
+# [TITLE]: devpkg-tesseract
+# [DESCRIPTION]: All content for pkgconfig file tesseract.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+include(devpkg-curl)
+include(devpkg-leptonica)
+include(devpkg-libarchive)
+
+tesseract-dev
+include(curl)
+include(libstdcpp)
+include(tesseract)

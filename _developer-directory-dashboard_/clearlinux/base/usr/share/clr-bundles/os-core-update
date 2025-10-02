@@ -1,0 +1,29 @@
+# [TITLE]: os-core-update
+# [DESCRIPTION]: Provides basic suite for running Clear Linux OS for IA Updater.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Otavio Pontes <otavio.pontes@intel.com>
+include(os-core)
+include(os-core-plus)
+include(os-core-webproxy)
+include(btrfs-progs)
+bzip2
+clr-bundles
+clr-find-bundle
+clr-hardware-files
+clr-one-shot-updates
+clr-service-restart-bin
+clr-update-triggers
+efibootmgr-bin
+findutils-bin
+gzip-bin
+pigz-bin
+swupd-client
+swupd-overdue
+tar-bin
+xz-bin
+include(curl)
+include(libarchive)
+include(popt-lib)
+include(clr-hardware-files)

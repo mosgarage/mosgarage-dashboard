@@ -1,0 +1,17 @@
+# [TITLE]: devpkg-ImageMagick
+# [DESCRIPTION]: All content for pkgconfig file ImageMagick.pc.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(devpkg-base)
+
+ImageMagick-dev
+include(libX11client)
+include(libglib)
+include(lib-imageformat)
+include(xz)
+include(libstdcpp)
+include(qt-core)
+include(qt-basic)

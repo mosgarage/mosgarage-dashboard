@@ -1,0 +1,30 @@
+# [TITLE]: os-testsuite-0day
+# [DESCRIPTION]: Helpers for the 0day kernel testing framework.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools, Kernel
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+include(c-basic)
+include(dev-utils)
+include(python3-basic)
+include(perl-basic)
+include(btrfs-progs)
+
+include(acpica-unix2)
+include(btrfs-progs)
+docbook-xml
+f2fs-tools
+fakeroot
+i2c-tools
+include(intltool)
+graphite
+include(devpkg-hwloc)
+include(llvm)
+include(devpkg-mariadb)
+include(devpkg-libXaw)
+include(memcached)
+include(moreutils)
+include(pandoc)
+ruby
+sg3_utils

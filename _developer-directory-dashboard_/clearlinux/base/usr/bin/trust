@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+cat <<EOF
+Clear Linux provides 'clrtrust' command to manage trust system-wide. Use
+'clrtrust --help' to view the available commands. Use of p11-kit 'trust' for
+trust store management is not supported and should be avoided.
+
+p11-kit's 'trust' is still available as 'p11-trust'.
+EOF
+
+exit 1

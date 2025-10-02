@@ -1,0 +1,87 @@
+# [TITLE]: machine-learning-basic
+# [DESCRIPTION]: Build machine learning applications with a full suite of libraries.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Data Science, Python
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+include(c-basic)
+include(cloud-api)
+include(python-extras)
+include(python-data-science)
+include(openmpi)
+#
+# Key ML frameworks and tools
+#
+
+include(machine-learning-mycroft)
+
+pypi-scikit_learn
+
+
+
+#
+# Dependencies, helpers and libraries for Key frameworks
+#
+
+pypi-configargparse
+pypi-pillow
+R-deepnet
+R-neuralnet
+R-statmod
+pypi-appdirs
+pypi-astroid
+pypi-bokeh
+include(devpkg-boost)
+cycler-python
+include(devpkg-eigen)
+include(devpkg-fann)
+include(devpkg-gflags)
+include(devpkg-glog)
+glibc-lib-avx2
+include(devpkg-googletest)
+include(graphviz)
+pypi-h5py
+hdf5-dev
+hdf5-dev
+#Keras
+leveldb-dev
+include(devpkg-libjpeg-turbo)
+include(devpkg-lmdb)
+pypi-matplotlib
+pypi-mido
+mkl-dnn-dev
+mpi4py
+nose-parameterized
+pypi-numpy
+ocl-icd
+include(devpkg-ocl-icd)
+include(openblas)
+include(devpkg-opencv)
+opencv-python
+openjdk-dev
+pandas
+pypi-pillow
+pypi-posix_ipc
+include(devpkg-protobuf-c)
+include(devpkg-protobuf)
+protobuf-python
+pypi-pydot
+pydotplus
+pypi-pydot_ng
+pypi-pyparsing
+pypi-future
+pypi-levenshtein
+pypi-mock
+PyYAML
+pypi-scikit_image
+scipy-python
+pypi-six
+pypi-smart_open
+include(devpkg-snappy)
+include(Sphinx)
+swig
+include(devpkg-tbb)
+
+pypi-tqdm
+pypi-wheel
+include(pcre-lib)

@@ -1,0 +1,7 @@
+# [TITLE]: os-installer
+# [DESCRIPTION]: Vanity name for the clr-installer to maintain old bundle
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Mark Horn <mark.d.horn@intel.com>
+include(clr-installer)

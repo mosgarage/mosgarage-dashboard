@@ -1,0 +1,25 @@
+# [TITLE]: lib-samba
+# [DESCRIPTION]: Helper libraries for accessing samba shares.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+
+# start of custom additions
+include(libglib)
+include(curl)
+include(qt-core)
+include(popt-lib)
+include(dbus-lib)
+include(openldap)
+include(icu4c-lib)
+include(libstdcpp)
+include(lib-openssl)
+include(python3-basic)
+include(perl-basic)
+# end of custom additions
+
+# main package
+samba-lib
+#samba-extras

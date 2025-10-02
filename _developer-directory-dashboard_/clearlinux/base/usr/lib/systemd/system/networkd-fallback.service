@@ -1,0 +1,6 @@
+[Unit]
+Description=Attempt to start systemd-networkd if no one manages ethernet if
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/clr-fallback-to-systemd-networkd

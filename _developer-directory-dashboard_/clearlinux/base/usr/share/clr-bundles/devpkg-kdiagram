@@ -1,0 +1,17 @@
+# [TITLE]: devpkg-kdiagram
+# [DESCRIPTION]: All development content for kdiagram package.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Developer Tools
+# [MAINTAINER]: Patrick McCarty <patrick.mccarty@intel.com>
+
+include(devpkg-base)
+
+kdiagram-dev
+include(harfbuzz-lib)
+include(qt-core)
+include(qt-basic)
+include(icu4c-lib)
+include(lib-opengl)
+include(lib-imageformat)
+include(openldap)

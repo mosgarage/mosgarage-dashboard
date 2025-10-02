@@ -1,0 +1,11 @@
+# [TITLE]: dhcp-server
+# [DESCRIPTION]: Run a dhcp server.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Networking
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+dnsmasq
+include(systemd)
+include(gmp-lib)
+include(nettle-lib)
+include(dbus-lib)

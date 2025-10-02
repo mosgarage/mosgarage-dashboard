@@ -1,0 +1,17 @@
+# [TITLE]: gphoto2
+# [DESCRIPTION]: Command line interface to libgphoto2.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: Arjan van de Ven <arjan@linux.intel.com>
+
+
+# start of custom additions (edits outside this area will be removed automatically)
+include(gphoto)
+include(libXpm-lib)
+include(gnome-base-libs)
+include(lib-imageformat)
+# end of custom additions
+
+# main package
+gphoto2

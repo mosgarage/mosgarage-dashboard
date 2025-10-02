@@ -1,0 +1,13 @@
+[Unit]
+Description=Trigger OS Update if an update is overdue
+
+
+[Service]
+Type=simple
+Restart=no
+Nice=10
+RemainAfterExit=yes
+ExecStart=/usr/bin/swupd-overdue
+
+[Install]
+WantedBy=multi-user.target

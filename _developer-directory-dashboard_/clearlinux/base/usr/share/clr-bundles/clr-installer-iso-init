@@ -1,0 +1,9 @@
+# [TITLE]: clr-installer-iso-init
+# [DESCRIPTION]: Provide the content for the clr-installer ISO image initrd.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities, Developer Tools
+# [MAINTAINER]: Mark Horn <mark.d.horn@intel.com>
+include(os-core-plus)
+isomd5sum-bin
+include(popt-lib)

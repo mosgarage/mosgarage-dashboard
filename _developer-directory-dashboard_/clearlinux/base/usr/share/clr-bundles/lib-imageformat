@@ -1,0 +1,25 @@
+# [TITLE]: lib-imageformat
+# [DESCRIPTION]: Helpers for reading images.
+# [STATUS]: Active
+# [CAPABILITIES]:
+# [TAGS]: Tools and Utilities
+# [MAINTAINER]: William Douglas <william.douglas@intel.com>
+
+
+# start of custom additions
+include(gdk-pixbuf)
+include(libstdcpp)
+# include(lib-opengl)
+include(libglib)
+# include(lib-poppler)
+include(LibRaw-lib)
+# end of custom additions
+
+# main packages
+
+librsvg-lib
+exiv2-lib
+libpng-lib
+libjpeg-turbo-lib
+libwebp-lib
+tiff-lib
